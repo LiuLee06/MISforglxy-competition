@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.SemesterMapper">
+    <select id="selectAll" resultType="com.sdjzuxg.collegemanagesystem.entity.Semester">
+        SELECT * FROM SEMESTER ORDER BY is_current DESC, semester_id DESC
+    </select>
+    <select id="selectById" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.Semester">
+        SELECT * FROM SEMESTER WHERE semester_id = #{semesterId}
+    </select>
+    <select id="selectByName" parameterType="String" resultType="com.sdjzuxg.collegemanagesystem.entity.Semester">
+        SELECT * FROM SEMESTER WHERE semester_name LIKE CONCAT('%', #{semesterName}, '%')
+    </select>
+    <select id="selectCurrent" resultType="com.sdjzuxg.collegemanagesystem.entity.Semester">
+        SELECT * FROM SEMESTER WHERE is_current = 1
+    </select>
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.Semester">
+        INSERT INTO SEMESTER (semester_name, year, is_current) VALUES (#{semesterName}, #{year}, #{isCurrent})
+    </insert>
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.Semester">
+        UPDATE SEMESTER SET semester_name = #{semesterName}, year = #{year}, is_current = #{isCurrent} WHERE semester_id = #{semesterId}
+    </update>
+    <delete id="deleteById" parameterType="Integer">
+        DELETE FROM SEMESTER WHERE semester_id = #{semesterId}
+    </delete>
+</mapper>

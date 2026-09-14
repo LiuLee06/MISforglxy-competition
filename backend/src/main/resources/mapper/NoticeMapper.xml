@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.NoticeMapper">
+    <select id="selectAll" resultType="com.sdjzuxg.collegemanagesystem.entity.Notice">
+        SELECT
+            n.notice_id as noticeId,
+            n.title,
+            n.content,
+            n.publish_time as publishTime,
+            n.publisher_id as publisherId,
+            COALESCE(n.notice_type, '教学通知') as noticeType,
+            COALESCE(n.publish_dept, '院办') as publishDept,
+            COALESCE(n.attachments, '[]') as attachments,
+            COALESCE(n.receive_roles, '') as receiveRoles,
+            COALESCE(n.receive_depts, '') as receiveDepts,
+            COALESCE(n.status, 'published') as status,
+            n.publisher_type as publisherType,
+            COALESCE(n.publisher_name,
+                CASE
+                    WHEN n.publisher_type = 'teacher' AND t.teacher_id IS NOT NULL THEN t.name
+                    WHEN n.publisher_type = 'admin' AND a.admin_id IS NOT NULL THEN a.username
+                    WHEN t.teacher_id IS NOT NULL THEN t.name
+                    WHEN a.admin_id IS NOT NULL THEN a.username
+                    ELSE '未知'
+                END
+            ) as publisherName
+        FROM NOTICE n
+        LEFT JOIN TEACHER t ON n.publisher_id = t.teacher_id
+        LEFT JOIN ADMIN a ON n.publisher_id = a.admin_id
+        ORDER BY n.publish_time DESC
+    </select>
+
+    <select id="selectById" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.Notice">
+        SELECT
+            n.notice_id as noticeId,
+            n.title,
+            n.content,
+            n.publish_time as publishTime,
+            n.publisher_id as publisherId,
+            COALESCE(n.notice_type, '教学通知') as noticeType,
+            COALESCE(n.publish_dept, '院办') as publishDept,
+            COALESCE(n.attachments, '[]') as attachments,
+            COALESCE(n.receive_roles, '') as receiveRoles,
+            COALESCE(n.receive_depts, '') as receiveDepts,
+            COALESCE(n.status, 'published') as status,
+            n.publisher_type as publisherType,
+            COALESCE(n.publisher_name,
+                CASE
+                    WHEN n.publisher_type = 'teacher' AND t.teacher_id IS NOT NULL THEN t.name
+                    WHEN n.publisher_type = 'admin' AND a.admin_id IS NOT NULL THEN a.username
+                    WHEN t.teacher_id IS NOT NULL THEN t.name
+                    WHEN a.admin_id IS NOT NULL THEN a.username
+                    ELSE '未知'
+                END
+            ) as publisherName
+        FROM NOTICE n
+        LEFT JOIN TEACHER t ON n.publisher_id = t.teacher_id
+        LEFT JOIN ADMIN a ON n.publisher_id = a.admin_id
+        WHERE n.notice_id = #{noticeId}
+    </select>
+
+    <select id="selectByTeacherId" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.Notice">
+        SELECT DISTINCT
+            n.notice_id as noticeId,
+            n.title,
+            n.content,
+            n.publish_time as publishTime,
+            n.publisher_id as publisherId,
+            COALESCE(n.notice_type, '教学通知') as noticeType,
+            COALESCE(n.publish_dept, '院办') as publishDept,
+            COALESCE(n.attachments, '[]') as attachments,
+            COALESCE(n.receive_roles, '') as receiveRoles,
+            COALESCE(n.receive_depts, '') as receiveDepts,
+            COALESCE(nr.remind_count, 0) as remindCount,
+            CASE
+                WHEN nr.is_todo = 1 THEN 'todo'
+                WHEN nr.is_received = 1 THEN 'read'
+                ELSE 'unread'
+            END as status,
+            n.publisher_type as publisherType,
+            COALESCE(n.publisher_name,
+                CASE
+                    WHEN n.publisher_type = 'teacher' AND t.teacher_id IS NOT NULL THEN t.name
+                    WHEN n.publisher_type = 'admin' AND a.admin_id IS NOT NULL THEN a.username
+                    WHEN t.teacher_id IS NOT NULL THEN t.name
+                    WHEN a.admin_id IS NOT NULL THEN a.username
+                    ELSE '未知'
+                END
+            ) as publisherName
+        FROM NOTICE n
+        LEFT JOIN TEACHER t ON n.publisher_id = t.teacher_id
+        LEFT JOIN ADMIN a ON n.publisher_id = a.admin_id
+        LEFT JOIN NOTICE_RECEIVE nr ON n.notice_id = nr.notice_id AND nr.teacher_id = #{teacherId}
+        WHERE
+            -- 公告列表只显示"别人发给我"的通知，自己发布的去"我的发布"查看
+            n.notice_id IN (
+                SELECT nr2.notice_id FROM NOTICE_RECEIVE nr2 WHERE nr2.teacher_id = #{teacherId}
+            )
+            OR EXISTS (
+                SELECT 1 FROM TEACHER_ROLE tr WHERE tr.teacher_id = #{teacherId} AND tr.role_id = 1
+            )
+            OR (
+                n.receive_roles IS NOT NULL AND n.receive_roles != '' AND
+                NOT EXISTS (SELECT 1 FROM NOTICE_RECEIVE nr3 WHERE nr3.notice_id = n.notice_id) AND
+                EXISTS (
+                    SELECT 1 FROM TEACHER_ROLE tr 
+                    WHERE tr.teacher_id = #{teacherId} 
+                    AND FIND_IN_SET(tr.role_id, n.receive_roles)
+                )
+            )
+            OR (
+                n.receive_depts IS NOT NULL AND n.receive_depts != '' AND
+                NOT EXISTS (SELECT 1 FROM NOTICE_RECEIVE nr4 WHERE nr4.notice_id = n.notice_id) AND
+                EXISTS (
+                    SELECT 1 FROM TEACHER_DEPT td 
+                    LEFT JOIN DEPT d ON td.dept_id = d.dept_id
+                    WHERE td.teacher_id = #{teacherId} 
+                    AND FIND_IN_SET(d.dept_name, n.receive_depts)
+                )
+            )
+        ORDER BY n.publish_time DESC
+    </select>
+
+    <select id="selectByPublisherId" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.Notice">
+        SELECT
+            n.notice_id as noticeId,
+            n.title,
+            n.content,
+            n.publish_time as publishTime,
+            n.publisher_id as publisherId,
+            COALESCE(n.notice_type, '教学通知') as noticeType,
+            COALESCE(n.publish_dept, '院办') as publishDept,
+            COALESCE(n.attachments, '[]') as attachments,
+            COALESCE(n.receive_roles, '') as receiveRoles,
+            COALESCE(n.receive_depts, '') as receiveDepts,
+            COALESCE(n.status, 'published') as status,
+            n.publisher_type as publisherType,
+            COALESCE(n.publisher_name,
+                CASE
+                    WHEN n.publisher_type = 'teacher' AND t.teacher_id IS NOT NULL THEN t.name
+                    WHEN n.publisher_type = 'admin' AND a.admin_id IS NOT NULL THEN a.username
+                    WHEN t.teacher_id IS NOT NULL THEN t.name
+                    WHEN a.admin_id IS NOT NULL THEN a.username
+                    ELSE '未知'
+                END
+            ) as publisherName
+        FROM NOTICE n
+        LEFT JOIN TEACHER t ON n.publisher_id = t.teacher_id
+        LEFT JOIN ADMIN a ON n.publisher_id = a.admin_id
+        WHERE n.publisher_id = #{publisherId}
+          AND (n.publisher_type = #{publisherType} OR n.publisher_type IS NULL)
+        ORDER BY n.publish_time DESC
+    </select>
+
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.Notice" useGeneratedKeys="true" keyProperty="noticeId">
+        INSERT INTO NOTICE (title, content, publish_time, publisher_id, publisher_type, notice_type, publish_dept, attachments, receive_roles, receive_depts, status, publisher_name)
+        VALUES (#{title}, #{content}, #{publishTime}, #{publisherId}, #{publisherType}, #{noticeType}, #{publishDept}, #{attachments}, #{receiveRoles}, #{receiveDepts}, #{status}, #{publisherName})
+    </insert>
+
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.Notice">
+        UPDATE NOTICE
+        SET title = #{title}, content = #{content}, publish_time = NOW(), publisher_type = #{publisherType}, notice_type = #{noticeType}, publish_dept = #{publishDept}, attachments = #{attachments}, receive_roles = #{receiveRoles}, receive_depts = #{receiveDepts}, status = #{status}
+        WHERE notice_id = #{noticeId}
+    </update>
+
+    <delete id="deleteById" parameterType="Integer">
+        DELETE FROM NOTICE WHERE notice_id = #{noticeId}
+    </delete>
+</mapper>

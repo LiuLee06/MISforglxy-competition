@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.NoticeReceiveMapper">
+
+    <resultMap id="NoticeReceiveMap" type="com.sdjzuxg.collegemanagesystem.entity.NoticeReceive">
+        <id property="id" column="id"/>
+        <result property="isReceived" column="is_received"/>
+        <result property="isTodo" column="is_todo"/>
+        <result property="confirmTime" column="confirm_time"/>
+        <association property="notice" javaType="com.sdjzuxg.collegemanagesystem.entity.Notice">
+            <id property="noticeId" column="notice_id"/>
+            <result property="title" column="title"/>
+            <result property="content" column="content"/>
+            <result property="publishTime" column="publish_time"/>
+            <result property="publisherId" column="publisher_id"/>
+            <result property="publisherType" column="publisher_type"/>
+            <result property="noticeType" column="notice_type"/>
+            <result property="publishDept" column="publish_dept"/>
+            <result property="attachments" column="attachments"/>
+            <result property="status" column="notice_status"/>
+            <result property="publisherName" column="publisher_name"/>
+        </association>
+        <association property="teacher" javaType="com.sdjzuxg.collegemanagesystem.entity.Teacher">
+            <id property="teacherId" column="teacher_id"/>
+            <result property="name" column="teacher_name"/>
+            <result property="dept" column="teacher_dept"/>
+        </association>
+    </resultMap>
+
+    <select id="selectAll" resultMap="NoticeReceiveMap">
+        SELECT 
+            nr.id,
+            nr.notice_id,
+            nr.teacher_id,
+            nr.is_received,
+            nr.is_todo,
+            nr.confirm_time,
+            n.title,
+            n.content,
+            n.publish_time,
+            n.publisher_id,
+            n.publisher_type,
+            COALESCE(n.notice_type, '教学通知') as notice_type,
+            COALESCE((SELECT t2.dept FROM TEACHER t2 WHERE t2.teacher_id = n.publisher_id), n.publish_dept, '院办') as publish_dept,
+            COALESCE(n.attachments, '[]') as attachments,
+            COALESCE(n.status, 'published') as notice_status,
+            COALESCE(n.publisher_name,
+                CASE
+                    WHEN n.publisher_type = 'teacher' AND t.teacher_id IS NOT NULL THEN t.name
+                    WHEN n.publisher_type = 'admin' AND a.admin_id IS NOT NULL THEN a.username
+                    WHEN t.teacher_id IS NOT NULL THEN t.name
+                    WHEN a.admin_id IS NOT NULL THEN a.username
+                    ELSE '未知'
+                END
+            ) as publisher_name,
+            COALESCE(t2.name, '') as teacher_name,
+            t2.dept as teacher_dept
+        FROM NOTICE_RECEIVE nr
+        LEFT JOIN NOTICE n ON nr.notice_id = n.notice_id
+        LEFT JOIN TEACHER t ON n.publisher_id = t.teacher_id
+        LEFT JOIN ADMIN a ON n.publisher_id = a.admin_id
+        LEFT JOIN TEACHER t2 ON nr.teacher_id = t2.teacher_id
+    </select>
+
+    <select id="selectById" parameterType="Integer" resultMap="NoticeReceiveMap">
+        SELECT 
+            nr.id,
+            nr.notice_id,
+            nr.teacher_id,
+            nr.is_received,
+            nr.is_todo,
+            nr.confirm_time,
+            n.title,
+            n.content,
+            n.publish_time,
+            n.publisher_id,
+            n.publisher_type,
+            COALESCE(n.notice_type, '教学通知') as notice_type,
+            COALESCE((SELECT td.dept FROM TEACHER td WHERE td.teacher_id = n.publisher_id), n.publish_dept, '院办') as publish_dept,
+            COALESCE(n.attachments, '[]') as attachments,
+            COALESCE(n.status, 'published') as notice_status,
+            COALESCE(n.publisher_name,
+                CASE
+                    WHEN n.publisher_type = 'teacher' AND t.teacher_id IS NOT NULL THEN t.name
+                    WHEN n.publisher_type = 'admin' AND a.admin_id IS NOT NULL THEN a.username
+                    WHEN t.teacher_id IS NOT NULL THEN t.name
+                    WHEN a.admin_id IS NOT NULL THEN a.username
+                    ELSE '未知'
+                END
+            ) as publisher_name,
+            COALESCE(t2.name, '') as teacher_name,
+            t2.dept as teacher_dept
+        FROM NOTICE_RECEIVE nr
+        LEFT JOIN NOTICE n ON nr.notice_id = n.notice_id
+        LEFT JOIN TEACHER t ON n.publisher_id = t.teacher_id
+        LEFT JOIN ADMIN a ON n.publisher_id = a.admin_id
+        LEFT JOIN TEACHER t2 ON nr.teacher_id = t2.teacher_id
+        WHERE nr.id = #{id}
+    </select>
+
+    <select id="selectByTeacherId" parameterType="Integer" resultMap="NoticeReceiveMap">
+        SELECT 
+            nr.id,
+            nr.notice_id,
+            nr.teacher_id,
+            nr.is_received,
+            nr.is_todo,
+            nr.confirm_time,
+            n.title,
+            n.content,
+            n.publish_time,
+            n.publisher_id,
+            n.publisher_type,
+            COALESCE(n.notice_type, '教学通知') as notice_type,
+            COALESCE((SELECT td.dept FROM TEACHER td WHERE td.teacher_id = n.publisher_id), n.publish_dept, '院办') as publish_dept,
+            COALESCE(n.attachments, '[]') as attachments,
+            COALESCE(n.status, 'published') as notice_status,
+            COALESCE(n.publisher_name,
+                CASE
+                    WHEN n.publisher_type = 'teacher' AND t.teacher_id IS NOT NULL THEN t.name
+                    WHEN n.publisher_type = 'admin' AND a.admin_id IS NOT NULL THEN a.username
+                    WHEN t.teacher_id IS NOT NULL THEN t.name
+                    WHEN a.admin_id IS NOT NULL THEN a.username
+                    ELSE '未知'
+                END
+            ) as publisher_name,
+            COALESCE(t2.name, '') as teacher_name,
+            t2.dept as teacher_dept
+        FROM NOTICE_RECEIVE nr
+        LEFT JOIN NOTICE n ON nr.notice_id = n.notice_id
+        LEFT JOIN TEACHER t ON n.publisher_id = t.teacher_id
+        LEFT JOIN ADMIN a ON n.publisher_id = a.admin_id
+        LEFT JOIN TEACHER t2 ON nr.teacher_id = t2.teacher_id
+        WHERE nr.teacher_id = #{teacherId}
+        ORDER BY n.publish_time DESC
+    </select>
+
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.NoticeReceive" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO NOTICE_RECEIVE (notice_id, teacher_id, is_received, is_todo, confirm_time) 
+        VALUES (#{notice.noticeId}, #{teacher.teacherId}, #{isReceived}, #{isTodo, jdbcType=INTEGER}, #{confirmTime})
+    </insert>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO NOTICE_RECEIVE (notice_id, teacher_id, is_received, is_todo, confirm_time) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.notice.noticeId}, #{item.teacher.teacherId}, #{item.isReceived}, #{item.isTodo, jdbcType=INTEGER}, #{item.confirmTime})
+        </foreach>
+    </insert>
+
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.NoticeReceive">
+        UPDATE NOTICE_RECEIVE 
+        SET notice_id = #{notice.noticeId}, 
+            teacher_id = #{teacher.teacherId}, 
+            is_received = #{isReceived}, 
+            is_todo = #{isTodo, jdbcType=INTEGER},
+            confirm_time = #{confirmTime} 
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="Integer">
+        DELETE FROM NOTICE_RECEIVE WHERE id = #{id}
+    </delete>
+
+    <select id="selectByNoticeIdAndTeacherId" resultMap="NoticeReceiveMap">
+        SELECT 
+            nr.id,
+            nr.notice_id,
+            nr.teacher_id,
+            nr.is_received,
+            nr.is_todo,
+            nr.confirm_time,
+            n.title,
+            n.content,
+            n.publish_time,
+            n.publisher_id,
+            n.publisher_type,
+            COALESCE(n.notice_type, '教学通知') as notice_type,
+            COALESCE((SELECT td.dept FROM TEACHER td WHERE td.teacher_id = n.publisher_id), n.publish_dept, '院办') as publish_dept,
+            COALESCE(n.attachments, '[]') as attachments,
+            COALESCE(n.status, 'published') as notice_status,
+            COALESCE(n.publisher_name,
+                CASE
+                    WHEN n.publisher_type = 'teacher' AND t.teacher_id IS NOT NULL THEN t.name
+                    WHEN n.publisher_type = 'admin' AND a.admin_id IS NOT NULL THEN a.username
+                    WHEN t.teacher_id IS NOT NULL THEN t.name
+                    WHEN a.admin_id IS NOT NULL THEN a.username
+                    ELSE '未知'
+                END
+            ) as publisher_name
+        FROM NOTICE_RECEIVE nr
+        LEFT JOIN NOTICE n ON nr.notice_id = n.notice_id
+        LEFT JOIN TEACHER t ON n.publisher_id = t.teacher_id
+        LEFT JOIN ADMIN a ON n.publisher_id = a.admin_id
+        WHERE nr.notice_id = #{noticeId} AND nr.teacher_id = #{teacherId}
+    </select>
+
+    <update id="markAsRead">
+        UPDATE NOTICE_RECEIVE 
+        SET is_received = 1, confirm_time = NOW(), remind_count = 0
+        WHERE notice_id = #{noticeId} AND teacher_id = #{teacherId}
+    </update>
+
+    <update id="markAsTodo">
+        UPDATE NOTICE_RECEIVE 
+        SET is_todo = 1
+        WHERE notice_id = #{noticeId} AND teacher_id = #{teacherId}
+    </update>
+
+    <update id="unmarkTodo">
+        UPDATE NOTICE_RECEIVE 
+        SET is_todo = 0
+        WHERE notice_id = #{noticeId} AND teacher_id = #{teacherId}
+    </update>
+
+    <update id="resetStatusByNoticeId">
+        UPDATE NOTICE_RECEIVE 
+        SET is_received = 0, is_todo = 0
+        WHERE notice_id = #{noticeId}
+    </update>
+
+    <delete id="deleteByNoticeId">
+        DELETE FROM NOTICE_RECEIVE WHERE notice_id = #{noticeId}
+    </delete>
+
+    <!-- 获取公告的已读/未读统计 -->
+    <select id="selectReadStats" parameterType="Integer" resultType="java.util.Map">
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN is_received = 1 THEN 1 ELSE 0 END) as readCount,
+            SUM(CASE WHEN is_received = 0 THEN 1 ELSE 0 END) as unreadCount
+        FROM NOTICE_RECEIVE 
+        WHERE notice_id = #{noticeId}
+    </select>
+
+    <!-- 获取公告的已读/未读教师列表 -->
+    <select id="selectReadList" parameterType="Integer" resultType="java.util.Map">
+        SELECT 
+            nr.teacher_id as teacherId,
+            t.name as teacherName,
+            t.dept as teacherDept,
+            nr.is_received + 0 as isReceived,
+            nr.is_todo + 0 as isTodo,
+            nr.confirm_time as confirmTime
+        FROM NOTICE_RECEIVE nr
+        LEFT JOIN TEACHER t ON nr.teacher_id = t.teacher_id
+        WHERE nr.notice_id = #{noticeId}
+        ORDER BY nr.is_received ASC, t.name ASC
+    </select>
+
+    <!-- 提醒未读教师（更新提醒次数） -->
+    <update id="remindUnread">
+        UPDATE NOTICE_RECEIVE 
+        SET remind_count = COALESCE(remind_count, 0) + 1
+        WHERE notice_id = #{noticeId} AND is_received = 0
+    </update>
+
+    <!-- 统计教师的未读通知数量
+         口径必须与通知列表 SQL 的 status CASE 一致：
+         1) 排除待办（列表中 is_todo=1 优先归为待办，避免一条通知被两个角标重复计数）
+         2) 排除自己发布的通知（列表中自己发布的显示"已发布"而非"未读"）
+         3) INNER JOIN 顺带排除 NOTICE 已删除的残留接收记录 -->
+    <select id="countUnreadByTeacherId" parameterType="Integer" resultType="Integer">
+        SELECT COUNT(*)
+        FROM NOTICE_RECEIVE nr
+        INNER JOIN NOTICE n ON nr.notice_id = n.notice_id
+        WHERE nr.teacher_id = #{teacherId}
+          AND nr.is_received = 0
+          AND (nr.is_todo IS NULL OR nr.is_todo = 0)
+          AND n.publisher_id != #{teacherId}
+    </select>
+
+    <!-- 统计教师的待办事项数量（排除自己发布的通知，与公告列表可见范围保持一致） -->
+    <select id="countTodoByTeacherId" parameterType="Integer" resultType="Integer">
+        SELECT COUNT(*)
+        FROM NOTICE_RECEIVE nr
+        INNER JOIN NOTICE n ON nr.notice_id = n.notice_id
+        WHERE nr.teacher_id = #{teacherId}
+          AND nr.is_todo = 1
+          AND n.publisher_id != #{teacherId}
+    </select>
+
+    <!-- 全部待审核会议室申请数量（有审核权限的教师可见，与预约审核列表口径一致） -->
+    <select id="countPendingAudits" resultType="Integer">
+        SELECT COUNT(*) FROM ROOM_APPLY WHERE apply_status = 0
+    </select>
+</mapper>

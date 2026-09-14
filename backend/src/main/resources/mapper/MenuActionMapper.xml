@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.MenuActionMapper">
+    <select id="selectAll" resultType="com.sdjzuxg.collegemanagesystem.entity.MenuAction">
+        SELECT * FROM MENU_ACTION
+    </select>
+    <select id="selectById" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.MenuAction">
+        SELECT * FROM MENU_ACTION WHERE action_id = #{actionId}
+    </select>
+    <select id="selectByMenuId" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.MenuAction">
+        SELECT * FROM MENU_ACTION WHERE menu_id = #{menuId}
+    </select>
+    <select id="selectByActionCode" parameterType="String" resultType="com.sdjzuxg.collegemanagesystem.entity.MenuAction">
+        SELECT * FROM MENU_ACTION WHERE action_code = #{actionCode}
+    </select>
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.MenuAction">
+        INSERT INTO MENU_ACTION (menu_id, action_code, action_name) VALUES (#{menuId}, #{actionCode}, #{actionName})
+    </insert>
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.MenuAction">
+        UPDATE MENU_ACTION SET menu_id = #{menuId}, action_code = #{actionCode}, action_name = #{actionName} WHERE action_id = #{actionId}
+    </update>
+    <delete id="deleteById" parameterType="Integer">
+        DELETE FROM MENU_ACTION WHERE action_id = #{actionId}
+    </delete>
+</mapper>

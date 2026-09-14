@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.WorkloadResultMapper">
+    <resultMap id="WorkloadResultMap" type="com.sdjzuxg.collegemanagesystem.entity.WorkloadResult">
+        <id column="id" property="id"/>
+        <result column="teacher_no" property="teacherNo"/>
+        <result column="teacher_name" property="teacherName"/>
+        <result column="semester_id" property="semesterId"/>
+        <result column="semester_name" property="semesterName"/>
+        <result column="year" property="year"/>
+        <result column="student_limit" property="studentLimit"/>
+        <result column="total_hours" property="totalHours"/>
+        <result column="workload_hours" property="workloadHours"/>
+        <result column="calc_time" property="calcTime"/>
+    </resultMap>
+
+    <sql id="BaseSelect">
+        SELECT tw.*, s.semester_name, s.year
+        FROM TEACHER_WORKLOAD tw
+        LEFT JOIN SEMESTER s ON tw.semester_id = s.semester_id
+    </sql>
+
+    <!-- 管理端列表（学期明细）：按学期筛选或查全部，学年、学期从上到下，同一学期内工作量 G 从高到低 -->
+    <select id="selectResults" resultMap="WorkloadResultMap">
+        <include refid="BaseSelect"/>
+        <where>
+            <if test="semesterId != null">
+                tw.semester_id = #{semesterId}
+            </if>
+        </where>
+        ORDER BY s.year DESC, tw.semester_id DESC, tw.workload_hours DESC, tw.teacher_no ASC
+    </select>
+
+    <!-- 管理端列表（学年聚合）：同一学年的两个学期共用同一个 year 值，按教师聚合求和 -->
+    <select id="selectResultsGroupedByYear" resultMap="WorkloadResultMap">
+        SELECT
+            tw.teacher_no,
+            tw.teacher_name,
+            s.year,
+            SUM(tw.total_hours) AS total_hours,
+            SUM(tw.workload_hours) AS workload_hours,
+            MAX(tw.calc_time) AS calc_time
+        FROM TEACHER_WORKLOAD tw
+        LEFT JOIN SEMESTER s ON tw.semester_id = s.semester_id
+        WHERE s.year = #{year}
+        GROUP BY tw.teacher_no, tw.teacher_name, s.year
+        ORDER BY workload_hours DESC
+    </select>
+
+    <!-- 教师端列表：SQL 层归属条件，只能查到自己名字的结果 -->
+    <select id="selectMyResults" resultMap="WorkloadResultMap">
+        <include refid="BaseSelect"/>
+        <where>
+            tw.teacher_name = #{currentTeacherName}
+            <if test="semesterId != null">
+                AND tw.semester_id = #{semesterId}
+            </if>
+        </where>
+        ORDER BY s.year DESC, tw.semester_id DESC
+    </select>
+
+    <delete id="deleteBySemesterId">
+        DELETE FROM TEACHER_WORKLOAD WHERE semester_id = #{semesterId}
+    </delete>
+
+    <insert id="batchInsert">
+        INSERT INTO TEACHER_WORKLOAD
+            (teacher_no, teacher_name, semester_id, student_limit, total_hours, workload_hours, calc_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.teacherNo}, #{item.teacherName}, #{item.semesterId}, #{item.studentLimit},
+             #{item.totalHours}, #{item.workloadHours}, #{item.calcTime})
+        </foreach>
+    </insert>
+</mapper>

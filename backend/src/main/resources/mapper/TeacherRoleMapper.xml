@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.TeacherRoleMapper">
+    <resultMap id="TeacherRoleResultMap" type="com.sdjzuxg.collegemanagesystem.entity.TeacherRole">
+        <result property="teacherId" column="teacher_id"/>
+        <result property="roleId" column="role_id"/>
+        <association property="teacher" javaType="com.sdjzuxg.collegemanagesystem.entity.Teacher">
+            <result property="teacherId" column="teacher_id"/>
+            <result property="name" column="teacher_name"/>
+            <result property="dept" column="teacher_dept"/>
+            <result property="professionalTitle" column="teacher_title"/>
+            <result property="position" column="teacher_position"/>
+        </association>
+        <association property="role" javaType="com.sdjzuxg.collegemanagesystem.entity.Role">
+            <result property="roleId" column="role_id"/>
+            <result property="roleName" column="role_name"/>
+            <result property="roleDesc" column="role_desc"/>
+        </association>
+    </resultMap>
+
+    <sql id="baseSelect">
+        SELECT tr.teacher_id, tr.role_id,
+               t.name AS teacher_name, t.dept AS teacher_dept,
+               t.professional_title AS teacher_title, t.position AS teacher_position,
+               r.role_name, r.role_desc
+        FROM TEACHER_ROLE tr
+        LEFT JOIN TEACHER t ON tr.teacher_id = t.teacher_id
+        LEFT JOIN ROLE r ON tr.role_id = r.role_id
+    </sql>
+
+    <select id="selectAll" resultMap="TeacherRoleResultMap">
+        <include refid="baseSelect"/>
+        ORDER BY tr.teacher_id DESC
+    </select>
+
+    <select id="selectByTeacherId" parameterType="Integer" resultMap="TeacherRoleResultMap">
+        <include refid="baseSelect"/>
+        WHERE tr.teacher_id = #{teacherId}
+        ORDER BY tr.teacher_id DESC
+    </select>
+
+    <select id="selectByRoleId" parameterType="Integer" resultMap="TeacherRoleResultMap">
+        <include refid="baseSelect"/>
+        WHERE tr.role_id = #{roleId}
+        ORDER BY tr.teacher_id DESC
+    </select>
+
+    <select id="selectPage" resultMap="TeacherRoleResultMap">
+        <include refid="baseSelect"/>
+        <where>
+            <if test="roleId != null">
+                AND tr.role_id = #{roleId}
+            </if>
+            <if test="teacherId != null">
+                AND tr.teacher_id = #{teacherId}
+            </if>
+            <if test="teacherName != null and teacherName != ''">
+                <choose>
+                    <when test="searchMode == 'exact'">
+                        AND t.name = #{teacherName}
+                    </when>
+                    <otherwise>
+                        AND t.name LIKE CONCAT('%', #{teacherName}, '%')
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+        ORDER BY tr.teacher_id DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="countByCondition" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM TEACHER_ROLE tr
+        LEFT JOIN TEACHER t ON tr.teacher_id = t.teacher_id
+        <where>
+            <if test="roleId != null">
+                AND tr.role_id = #{roleId}
+            </if>
+            <if test="teacherId != null">
+                AND tr.teacher_id = #{teacherId}
+            </if>
+            <if test="teacherName != null and teacherName != ''">
+                <choose>
+                    <when test="searchMode == 'exact'">
+                        AND t.name = #{teacherName}
+                    </when>
+                    <otherwise>
+                        AND t.name LIKE CONCAT('%', #{teacherName}, '%')
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.TeacherRole">
+        INSERT INTO TEACHER_ROLE (teacher_id, role_id) VALUES (
+            <choose>
+                <when test="teacherId != null">#{teacherId}</when>
+                <otherwise>#{teacher.teacherId}</otherwise>
+            </choose>,
+            <choose>
+                <when test="roleId != null">#{roleId}</when>
+                <otherwise>#{role.roleId}</otherwise>
+            </choose>
+        )
+    </insert>
+
+    <update id="updateRole" parameterType="com.sdjzuxg.collegemanagesystem.entity.TeacherRole">
+        UPDATE TEACHER_ROLE SET role_id = #{roleId}
+        WHERE teacher_id = #{teacherId}
+        <if test="oldRoleId != null">
+            AND role_id = #{oldRoleId}
+        </if>
+    </update>
+
+    <delete id="deleteByTeacherIdAndRoleId">
+        DELETE FROM TEACHER_ROLE WHERE teacher_id = #{teacherId} AND role_id = #{roleId}
+    </delete>
+
+    <!-- 级联删除用:一次性清除指定教师的全部角色分配,避免外键阻止删除 TEACHER 主体 -->
+    <delete id="deleteByTeacherId" parameterType="Integer">
+        DELETE FROM TEACHER_ROLE WHERE teacher_id = #{teacherId}
+    </delete>
+</mapper>

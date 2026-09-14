@@ -1,0 +1,62 @@
+[
+        {
+            "deptId": 1,
+            "deptName": "学院领导",
+            "deptDesc": null
+        },
+        {
+            "deptId": 2,
+            "deptName": "学院办公室",
+            "deptDesc": null
+        },
+        {
+            "deptId": 3,
+            "deptName": "教学办公室",
+            "deptDesc": null
+        },
+        {
+            "deptId": 4,
+            "deptName": "科研办公室",
+            "deptDesc": null
+        },
+        {
+            "deptId": 5,
+            "deptName": "实验室",
+            "deptDesc": null
+        },
+        {
+            "deptId": 6,
+            "deptName": "学工办团委",
+            "deptDesc": null
+        },
+        {
+            "deptId": 7,
+            "deptName": "工程管理系",
+            "deptDesc": null
+        },
+        {
+            "deptId": 8,
+            "deptName": "工程造价系",
+            "deptDesc": null
+        },
+        {
+            "deptId": 9,
+            "deptName": "城乡建设与房地产系",
+            "deptDesc": null
+        },
+        {
+            "deptId": 10,
+            "deptName": "信息管理科学与工程系",
+            "deptDesc": null
+        },
+        {
+            "deptId": 11,
+            "deptName": "土地科学与技术系",
+            "deptDesc": null
+        },
+        {
+            "deptId": 12,
+            "deptName": "工业工程系",
+            "deptDesc": null
+        }
+    ]

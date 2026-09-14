@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.RoomApplyMapper">
+
+    <resultMap id="RoomApplyMap" type="com.sdjzuxg.collegemanagesystem.entity.RoomApply">
+        <id column="apply_id" property="applyId"/>
+        <result column="apply_time" property="applyTime"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="apply_status" property="applyStatus"/>
+        <result column="applicant_name" property="applicantName"/>
+        <association property="room" javaType="com.sdjzuxg.collegemanagesystem.entity.MeetingRoom">
+            <id column="room_id" property="roomId"/>
+            <result column="room_name" property="roomName"/>
+            <result column="capacity" property="capacity"/>
+            <result column="room_status" property="roomStatus"/>
+            <result column="manager_id" property="managerId"/>
+        </association>
+        <association property="teacher" javaType="com.sdjzuxg.collegemanagesystem.entity.Teacher">
+            <id column="teacher_id" property="teacherId"/>
+            <result column="teacher_name" property="name"/>
+            <result column="teacher_dept" property="dept"/>
+        </association>
+    </resultMap>
+
+    <select id="selectAll" resultMap="RoomApplyMap">
+        SELECT
+            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name,
+            r.room_id, r.room_name, r.capacity, r.room_status, r.manager_id,
+            t.teacher_id, t.name as teacher_name, t.dept as teacher_dept
+        FROM ROOM_APPLY a
+                 LEFT JOIN MEETING_ROOM r ON a.room_id = r.room_id
+                 LEFT JOIN TEACHER t ON a.teacher_id = t.teacher_id
+        ORDER BY a.apply_time DESC
+    </select>
+
+    <select id="selectById" parameterType="Integer" resultMap="RoomApplyMap">
+        SELECT
+            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name,
+            r.room_id, r.room_name, r.capacity, r.room_status, r.manager_id,
+            t.teacher_id, t.name as teacher_name, t.dept as teacher_dept
+        FROM ROOM_APPLY a
+                 LEFT JOIN MEETING_ROOM r ON a.room_id = r.room_id
+                 LEFT JOIN TEACHER t ON a.teacher_id = t.teacher_id
+        WHERE a.apply_id = #{applyId}
+    </select>
+
+    <select id="selectByTeacherId" parameterType="Integer" resultMap="RoomApplyMap">
+        SELECT
+            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name,
+            r.room_id, r.room_name, r.capacity, r.room_status, r.manager_id,
+            t.teacher_id, t.name as teacher_name, t.dept as teacher_dept
+        FROM ROOM_APPLY a
+                 LEFT JOIN MEETING_ROOM r ON a.room_id = r.room_id
+                 LEFT JOIN TEACHER t ON a.teacher_id = t.teacher_id
+        WHERE a.teacher_id = #{teacherId}
+        ORDER BY a.apply_time DESC
+    </select>
+
+    <select id="selectByStatus" parameterType="Integer" resultMap="RoomApplyMap">
+        SELECT
+            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name,
+            r.room_id, r.room_name, r.capacity, r.room_status, r.manager_id,
+            t.teacher_id, t.name as teacher_name, t.dept as teacher_dept
+        FROM ROOM_APPLY a
+                 LEFT JOIN MEETING_ROOM r ON a.room_id = r.room_id
+                 LEFT JOIN TEACHER t ON a.teacher_id = t.teacher_id
+        WHERE a.apply_status = #{status}
+        ORDER BY a.apply_time DESC
+    </select>
+
+    <select id="findConflicts" resultMap="RoomApplyMap">
+        SELECT
+            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status,
+            r.room_id, r.room_name, r.capacity, r.room_status,
+            t.teacher_id, t.name as teacher_name
+        FROM ROOM_APPLY a
+                 LEFT JOIN MEETING_ROOM r ON a.room_id = r.room_id
+                 LEFT JOIN TEACHER t ON a.teacher_id = t.teacher_id
+        WHERE a.room_id = #{roomId}
+          AND DATE(a.start_time) = #{date}
+          AND a.apply_status IN (0, 1)
+          AND (
+            (TIME(a.start_time) &lt; #{endTime} AND TIME(a.end_time) &gt; #{startTime})
+            )
+    </select>
+
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.RoomApply" useGeneratedKeys="true" keyProperty="applyId">
+        INSERT INTO ROOM_APPLY (
+        room_id, teacher_id, applicant_name, apply_time, start_time, end_time, apply_status
+        ) VALUES (
+        #{room.roomId},
+        <choose>
+            <when test="teacher != null and teacher.teacherId != null">#{teacher.teacherId}</when>
+            <otherwise>NULL</otherwise>
+        </choose>,
+        #{applicantName},
+        #{applyTime},
+        #{startTime},
+        #{endTime},
+        #{applyStatus}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.RoomApply">
+        UPDATE ROOM_APPLY
+        SET
+        room_id = #{room.roomId},
+        <if test="teacher != null and teacher.teacherId != null">teacher_id = #{teacher.teacherId},</if>
+        <if test="applicantName != null">applicant_name = #{applicantName},</if>
+        start_time = #{startTime},
+        end_time = #{endTime},
+        apply_status = #{applyStatus}
+        WHERE apply_id = #{applyId}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE ROOM_APPLY
+        SET apply_status = #{status}
+        WHERE apply_id = #{applyId}
+    </update>
+
+    <delete id="deleteById" parameterType="Integer">
+        DELETE FROM ROOM_APPLY WHERE apply_id = #{applyId}
+    </delete>
+
+</mapper>

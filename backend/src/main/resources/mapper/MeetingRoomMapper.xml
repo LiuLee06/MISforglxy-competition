@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.MeetingRoomMapper">
+
+    <resultMap id="MeetingRoomResultMap" type="com.sdjzuxg.collegemanagesystem.entity.MeetingRoom">
+        <id property="roomId" column="room_id"/>
+        <result property="roomName" column="room_name"/>
+        <result property="capacity" column="capacity"/>
+        <result property="roomStatus" column="room_status"/>
+        <result property="managerId" column="manager_id"/>
+        <result property="managerName" column="manager_name"/>
+    </resultMap>
+
+    <!-- 查询所有会议室（关联TEACHER表获取负责人姓名） -->
+    <select id="selectAll" resultMap="MeetingRoomResultMap">
+        SELECT mr.room_id, mr.room_name, mr.capacity, mr.room_status, mr.manager_id, t.name AS manager_name
+        FROM MEETING_ROOM mr
+        LEFT JOIN TEACHER t ON mr.manager_id = t.teacher_id
+        ORDER BY mr.room_id
+    </select>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" parameterType="int" resultMap="MeetingRoomResultMap">
+        SELECT mr.room_id, mr.room_name, mr.capacity, mr.room_status, mr.manager_id, t.name AS manager_name
+        FROM MEETING_ROOM mr
+        LEFT JOIN TEACHER t ON mr.manager_id = t.teacher_id
+        WHERE mr.room_id = #{roomId}
+    </select>
+
+    <!-- 查询可用会议室 -->
+    <select id="selectAvailable" resultMap="MeetingRoomResultMap">
+        SELECT mr.room_id, mr.room_name, mr.capacity, mr.room_status, mr.manager_id, t.name AS manager_name
+        FROM MEETING_ROOM mr
+        LEFT JOIN TEACHER t ON mr.manager_id = t.teacher_id
+        WHERE mr.room_status = 1
+        ORDER BY mr.room_id
+    </select>
+
+    <!-- 插入会议室 -->
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.MeetingRoom"
+            useGeneratedKeys="true" keyProperty="roomId">
+        INSERT INTO MEETING_ROOM (room_name, capacity, room_status, manager_id)
+        VALUES (#{roomName}, #{capacity}, #{roomStatus}, #{managerId})
+    </insert>
+
+    <!-- 更新会议室 -->
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.MeetingRoom">
+        UPDATE MEETING_ROOM
+        SET
+            room_name = #{roomName},
+            capacity = #{capacity},
+            room_status = #{roomStatus},
+            manager_id = #{managerId}
+        WHERE room_id = #{roomId}
+    </update>
+
+    <!-- 删除会议室 -->
+    <delete id="deleteById" parameterType="int">
+        DELETE FROM MEETING_ROOM WHERE room_id = #{roomId}
+    </delete>
+
+    <!-- 名称唯一性校验：新增时用 -->
+    <select id="countByName" parameterType="String" resultType="int">
+        SELECT COUNT(*) FROM MEETING_ROOM WHERE room_name = #{roomName}
+    </select>
+
+    <!-- 名称唯一性校验：修改时排除自身 -->
+    <select id="countByNameExcludeSelf" resultType="int">
+        SELECT COUNT(*) FROM MEETING_ROOM WHERE room_name = #{roomName} AND room_id != #{roomId}
+    </select>
+
+</mapper>

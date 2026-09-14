@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.AdminMapper">
+    <resultMap id="AdminResultMap" type="com.sdjzuxg.collegemanagesystem.entity.Admin">
+        <id column="admin_id" property="adminId"/>
+        <result column="username" property="username"/>
+        <result column="password" property="password"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <association property="role" javaType="com.sdjzuxg.collegemanagesystem.entity.Role">
+            <id column="role_id" property="roleId"/>
+            <result column="role_name" property="roleName"/>
+            <result column="role_desc" property="roleDesc"/>
+        </association>
+    </resultMap>
+    
+    <select id="selectAll" resultMap="AdminResultMap">
+        SELECT a.*, r.role_name, r.role_desc FROM ADMIN a LEFT JOIN ROLE r ON a.role_id = r.role_id
+    </select>
+    <select id="selectById" parameterType="Integer" resultMap="AdminResultMap">
+        SELECT a.*, r.role_name, r.role_desc FROM ADMIN a LEFT JOIN ROLE r ON a.role_id = r.role_id WHERE a.admin_id = #{adminId}
+    </select>
+    <select id="selectByUsername" parameterType="String" resultMap="AdminResultMap">
+        SELECT a.*, r.role_name, r.role_desc FROM ADMIN a LEFT JOIN ROLE r ON a.role_id = r.role_id WHERE a.username = #{username}
+    </select>
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.Admin">
+        INSERT INTO ADMIN (username, password, phone, email, role_id) VALUES (#{username}, #{password}, #{phone}, #{email}, #{role.roleId})
+    </insert>
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.Admin">
+        UPDATE ADMIN SET username = #{username}, password = #{password}, phone = #{phone}, email = #{email}, role_id = #{role.roleId} WHERE admin_id = #{adminId}
+    </update>
+    <update id="updatePassword">
+        UPDATE ADMIN SET password = #{password} WHERE admin_id = #{adminId}
+    </update>
+    <delete id="deleteById" parameterType="Integer">
+        DELETE FROM ADMIN WHERE admin_id = #{adminId}
+    </delete>
+</mapper>
