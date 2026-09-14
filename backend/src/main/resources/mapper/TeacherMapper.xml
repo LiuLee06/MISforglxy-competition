@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.TeacherMapper">
+    <resultMap id="TeacherResultMap" type="com.sdjzuxg.collegemanagesystem.entity.Teacher">
+        <id column="teacher_id" property="teacherId"/>
+        <result column="dept" property="dept"/>
+        <result column="name" property="name"/>
+        <result column="professional_title" property="professionalTitle"/>
+        <result column="position" property="position"/>
+        <result column="birth" property="birth"/>
+        <result column="political" property="political"/>
+        <result column="phone" property="phone"/>
+        <result column="officePhone" property="officePhone"/>
+        <result column="password" property="password"/>
+        <result column="is_retired" property="isRetired"/>
+        <result column="is_full_time" property="isFullTime"/>
+        <result column="education" property="education"/>
+        <result column="staff_no" property="staffNo"/>
+        <result column="degree" property="degree"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="TeacherResultMap">
+        SELECT t.teacher_id, COALESCE(GROUP_CONCAT(d.dept_name), t.dept) AS dept,
+               t.name, t.professional_title, t.position, t.birth, t.political,
+               t.phone, t.officePhone, t.password, t.is_retired, t.is_full_time,
+               t.education, t.staff_no, t.degree
+        FROM TEACHER t
+                 LEFT JOIN TEACHER_DEPT td ON t.teacher_id = td.teacher_id
+                 LEFT JOIN DEPT d ON td.dept_id = d.dept_id
+        GROUP BY t.teacher_id
+    </select>
+    <select id="selectById" parameterType="Integer" resultMap="TeacherResultMap">
+        SELECT t.teacher_id, COALESCE(GROUP_CONCAT(d.dept_name), t.dept) AS dept,
+               t.name, t.professional_title, t.position, t.birth, t.political,
+               t.phone, t.officePhone, t.password, t.is_retired, t.is_full_time,
+               t.education, t.staff_no, t.degree
+        FROM TEACHER t
+                 LEFT JOIN TEACHER_DEPT td ON t.teacher_id = td.teacher_id
+                 LEFT JOIN DEPT d ON td.dept_id = d.dept_id
+        WHERE t.teacher_id = #{teacherId}
+        GROUP BY t.teacher_id
+    </select>
+    <select id="selectByPhone" parameterType="String" resultMap="TeacherResultMap">
+        SELECT t.teacher_id, COALESCE(GROUP_CONCAT(d.dept_name), t.dept) AS dept,
+               t.name, t.professional_title, t.position, t.birth, t.political,
+               t.phone, t.officePhone, t.password, t.is_retired, t.is_full_time,
+               t.education, t.staff_no, t.degree
+        FROM TEACHER t
+                 LEFT JOIN TEACHER_DEPT td ON t.teacher_id = td.teacher_id
+                 LEFT JOIN DEPT d ON td.dept_id = d.dept_id
+        WHERE t.phone = #{phone}
+        GROUP BY t.teacher_id
+    </select>
+    <select id="selectByName" parameterType="String" resultMap="TeacherResultMap">
+        SELECT t.teacher_id, COALESCE(GROUP_CONCAT(d.dept_name), t.dept) AS dept,
+               t.name, t.professional_title, t.position, t.birth, t.political,
+               t.phone, t.officePhone, t.password, t.is_retired, t.is_full_time,
+               t.education, t.staff_no, t.degree
+        FROM TEACHER t
+                 LEFT JOIN TEACHER_DEPT td ON t.teacher_id = td.teacher_id
+                 LEFT JOIN DEPT d ON td.dept_id = d.dept_id
+        WHERE t.name = #{name}
+        GROUP BY t.teacher_id
+            LIMIT 1
+    </select>
+    <!-- 按工号查询（新增） -->
+    <select id="selectByStaffNo" parameterType="String" resultMap="TeacherResultMap">
+        SELECT t.teacher_id, COALESCE(GROUP_CONCAT(d.dept_name), t.dept) AS dept,
+               t.name, t.professional_title, t.position, t.birth, t.political,
+               t.phone, t.officePhone, t.password, t.is_retired, t.is_full_time,
+               t.education, t.staff_no, t.degree
+        FROM TEACHER t
+                 LEFT JOIN TEACHER_DEPT td ON t.teacher_id = td.teacher_id
+                 LEFT JOIN DEPT d ON td.dept_id = d.dept_id
+        WHERE t.staff_no = #{staffNo}
+        GROUP BY t.teacher_id
+    </select>
+    <delete id="deleteById" parameterType="Integer">
+        DELETE FROM TEACHER WHERE teacher_id = #{teacherId}
+    </delete>
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.Teacher" useGeneratedKeys="true" keyProperty="teacherId">
+        INSERT INTO TEACHER (dept, name, professional_title, position, birth, political, phone, officePhone, password, is_retired, is_full_time, education, staff_no, degree)
+        VALUES (#{dept}, #{name}, #{professionalTitle}, #{position}, #{birth}, #{political}, #{phone}, #{officePhone}, #{password}, #{isRetired}, #{isFullTime}, #{education}, #{staffNo}, #{degree})
+    </insert>
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.Teacher">
+        UPDATE TEACHER
+        <set>
+            <if test="dept != null">dept = #{dept},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="professionalTitle != null">professional_title = #{professionalTitle},</if>
+            <if test="position != null">position = #{position},</if>
+            <if test="birth != null">birth = #{birth},</if>
+            <if test="political != null">political = #{political},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="officePhone != null">officePhone = #{officePhone},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="isRetired != null">is_retired = #{isRetired},</if>
+            <if test="isFullTime != null">is_full_time = #{isFullTime},</if>
+            <if test="education != null">education = #{education},</if>
+            <if test="staffNo != null">staff_no = #{staffNo},</if>
+            <if test="degree != null">degree = #{degree},</if>
+        </set>
+        WHERE teacher_id = #{teacherId}
+    </update>
+    <update id="updatePassword">
+        UPDATE TEACHER SET password = #{password} WHERE teacher_id = #{teacherId}
+    </update>
+    <!-- 按职称分组统计 -->
+    <select id="countGroupByProfessionalTitle" resultType="java.util.HashMap">
+        SELECT
+        t.professional_title,
+        COUNT(t.teacher_id) AS count
+        FROM TEACHER t
+        LEFT JOIN TEACHER_DEPT td ON t.teacher_id = td.teacher_id
+        <where>
+            <if test="deptId != null and deptId != ''">
+                td.dept_id = #{deptId}
+            </if>
+            AND t.professional_title IS NOT NULL AND t.professional_title != ''
+        </where>
+        GROUP BY t.professional_title
+    </select>
+    <!-- 按年龄段分组统计（基于年份差） -->
+    <select id="countGroupByAgeGroup" resultType="java.util.HashMap">
+        SELECT
+        CASE
+        WHEN YEAR(CURDATE()) - CAST(SUBSTRING_INDEX(t.birth, '.', 1) AS UNSIGNED) &lt;= 30 THEN '≤30岁'
+        WHEN YEAR(CURDATE()) - CAST(SUBSTRING_INDEX(t.birth, '.', 1) AS UNSIGNED) BETWEEN 31 AND 40 THEN '31-40岁'
+        WHEN YEAR(CURDATE()) - CAST(SUBSTRING_INDEX(t.birth, '.', 1) AS UNSIGNED) BETWEEN 41 AND 50 THEN '41-50岁'
+        WHEN YEAR(CURDATE()) - CAST(SUBSTRING_INDEX(t.birth, '.', 1) AS UNSIGNED) &gt; 50 THEN '>50岁'
+        ELSE '未知'
+        END AS name,
+        COUNT(t.teacher_id) AS value
+        FROM TEACHER t
+        LEFT JOIN TEACHER_DEPT td ON t.teacher_id = td.teacher_id
+        <where>
+            <if test="deptId != null and deptId != ''">
+                td.dept_id = #{deptId}
+            </if>
+            AND t.birth IS NOT NULL AND t.birth != ''
+            AND t.birth REGEXP '^[0-9]{4}(\\.[0-9]{1,2})?$'
+        </where>
+        GROUP BY 1
+    </select>
+
+    <!-- 按学历分组统计 -->
+    <select id="countGroupByEducation" resultType="java.util.HashMap">
+        SELECT
+        t.education AS name,
+        COUNT(t.teacher_id) AS value
+        FROM TEACHER t
+        LEFT JOIN TEACHER_DEPT td ON t.teacher_id = td.teacher_id
+        <where>
+            <if test="deptId != null and deptId != ''">
+                td.dept_id = #{deptId}
+            </if>
+            AND t.education IS NOT NULL AND t.education != ''
+        </where>
+        GROUP BY t.education
+    </select>
+
+    <!-- 分页查询 -->
+    <select id="selectPage" resultMap="TeacherResultMap">
+        SELECT t.teacher_id, COALESCE(GROUP_CONCAT(d.dept_name), t.dept) AS dept,
+        t.name, t.professional_title, t.position, t.birth, t.political,
+        t.phone, t.officePhone, t.password, t.is_retired, t.is_full_time,
+        t.education, t.staff_no, t.degree
+        FROM TEACHER t
+        LEFT JOIN TEACHER_DEPT td ON t.teacher_id = td.teacher_id
+        LEFT JOIN DEPT d ON td.dept_id = d.dept_id
+        <where>
+            <if test="searchKey != null and searchKey != ''">
+                AND (t.teacher_id LIKE CONCAT('%', #{searchKey}, '%')
+                OR t.name LIKE CONCAT('%', #{searchKey}, '%')
+                OR t.phone LIKE CONCAT('%', #{searchKey}, '%'))
+            </if>
+        </where>
+        GROUP BY t.teacher_id
+        ORDER BY t.teacher_id
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 查询总数 -->
+    <select id="countByCondition" resultType="long">
+        SELECT COUNT(*) FROM TEACHER
+        <where>
+            <if test="searchKey != null and searchKey != ''">
+                AND (teacher_id LIKE CONCAT('%', #{searchKey}, '%')
+                OR name LIKE CONCAT('%', #{searchKey}, '%'))
+            </if>
+        </where>
+    </select>
+</mapper>

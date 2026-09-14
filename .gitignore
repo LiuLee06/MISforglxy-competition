@@ -1,0 +1,17 @@
+# Java / Maven
+backend/target/
+backend/.idea/
+
+# Node / Vue
+frontend/node_modules/
+frontend/dist/
+
+# Local environment and IDE files
+.env
+*.local
+.vscode/
+*.iml
+
+# OS files
+Thumbs.db
+Desktop.ini

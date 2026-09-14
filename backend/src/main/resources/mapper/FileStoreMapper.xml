@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.FileStoreMapper">
+
+    <!-- 新增文件二进制内容 -->
+    <insert id="insert">
+        INSERT INTO FILE_STORE (file_name, content, upload_time)
+        VALUES (#{fileName}, #{content}, NOW())
+    </insert>
+
+    <!-- 按存储文件名读取文件行,单行以 Map 返回,content 字段为 LONGBLOB 对应的 byte[] -->
+    <select id="selectContentByName" resultType="map">
+        SELECT content FROM FILE_STORE WHERE file_name = #{fileName}
+    </select>
+
+</mapper>

@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.WorkloadMapper">
+    <resultMap id="WorkloadResultMap" type="com.sdjzuxg.collegemanagesystem.entity.Workload">
+        <id column="wl_id" property="wlId"/>
+        <result column="semester_id" property="semesterId"/>
+        <result column="semester_name" property="semesterName"/>
+        <result column="teacher_no" property="teacherNo"/>
+        <result column="teacher_name" property="teacherName"/>
+        <result column="course_no" property="courseNo"/>
+        <result column="course_name" property="courseName"/>
+        <result column="hour_type" property="hourType"/>
+        <result column="notification_no" property="notificationNo"/>
+        <result column="transfer_hours" property="transferHours"/>
+        <result column="actual_hours" property="actualHours"/>
+        <result column="total_hours" property="totalHours"/>
+        <result column="total_credit" property="totalCredit"/>
+        <result column="actual_hour_ratio" property="actualHourRatio"/>
+        <result column="student_count" property="studentCount"/>
+        <result column="class_name" property="className"/>
+        <result column="confirm_status" property="confirmStatus"/>
+    </resultMap>
+
+    <sql id="BaseSelect">
+        SELECT w.*, s.semester_name
+        FROM WORKLOAD w
+        LEFT JOIN SEMESTER s ON w.semester_id = s.semester_id
+    </sql>
+
+    <select id="selectByConditions" resultMap="WorkloadResultMap">
+        <include refid="BaseSelect"/>
+        <where>
+            <if test="teacherNo != null">
+                AND w.teacher_no = #{teacherNo}
+            </if>
+            <if test="teacherName != null">
+                AND w.teacher_name LIKE CONCAT('%', #{teacherName}, '%')
+            </if>
+            <if test="exactTeacherName != null">
+                AND w.teacher_name = #{exactTeacherName}
+            </if>
+            <if test="courseName != null">
+                AND w.course_name LIKE CONCAT('%', #{courseName}, '%')
+            </if>
+            <if test="semesterId != null">
+                AND w.semester_id = #{semesterId}
+            </if>
+            <if test="confirmStatus != null">
+                AND w.confirm_status = #{confirmStatus}
+            </if>
+        </where>
+        ORDER BY w.wl_id DESC
+    </select>
+
+    <!-- 前端无页面调用，暂不启用（与 Controller/Service/Mapper 接口同步注释） -->
+    <!--
+    <select id="selectDepartmentWorkloads" resultMap="WorkloadResultMap">
+        SELECT w.*, s.semester_name
+        FROM WORKLOAD w
+        LEFT JOIN SEMESTER s ON w.semester_id = s.semester_id
+        LEFT JOIN TEACHER t ON w.teacher_no = t.staff_no
+        <where>
+            t.dept = (
+                SELECT current_teacher.dept
+                FROM TEACHER current_teacher
+                WHERE current_teacher.teacher_id = #{teacherId}
+            )
+            <if test="teacherName != null">
+                AND w.teacher_name LIKE CONCAT('%', #{teacherName}, '%')
+            </if>
+            <if test="courseName != null">
+                AND w.course_name LIKE CONCAT('%', #{courseName}, '%')
+            </if>
+            <if test="semesterId != null">
+                AND w.semester_id = #{semesterId}
+            </if>
+            <if test="confirmStatus != null">
+                AND COALESCE(w.confirm_status, 0) = #{confirmStatus}
+            </if>
+        </where>
+        ORDER BY w.wl_id DESC
+    </select>
+    -->
+
+    <select id="selectMyRelated" resultMap="WorkloadResultMap">
+        <include refid="BaseSelect"/>
+        <where>
+            (
+                w.teacher_name = #{currentTeacherName}
+                OR (
+                    w.notification_no IS NOT NULL
+                    AND TRIM(w.notification_no) != ''
+                    AND EXISTS (
+                        SELECT 1
+                        FROM WORKLOAD own
+                        WHERE own.teacher_name = #{currentTeacherName}
+                          AND own.semester_id = w.semester_id
+                          AND own.notification_no = w.notification_no
+                          AND own.course_no = w.course_no
+                    )
+                )
+            )
+            <if test="semesterId != null">
+                AND w.semester_id = #{semesterId}
+            </if>
+            <if test="courseName != null">
+                AND w.course_name LIKE CONCAT('%', #{courseName}, '%')
+            </if>
+            <if test="teacherName != null">
+                AND w.teacher_name LIKE CONCAT('%', #{teacherName}, '%')
+            </if>
+        </where>
+        ORDER BY w.semester_id, w.notification_no, w.course_no, w.teacher_name, w.hour_type, w.wl_id
+    </select>
+
+    <!-- 前端无页面调用，暂不启用（与 Controller/Service/Mapper 接口同步注释） -->
+    <!--
+    <select id="selectById" parameterType="Integer" resultMap="WorkloadResultMap">
+        <include refid="BaseSelect"/>
+        WHERE w.wl_id = #{wlId}
+    </select>
+    -->
+
+    <insert id="batchInsert">
+        INSERT INTO WORKLOAD (
+            semester_id, teacher_no, teacher_name, course_no, course_name,
+            hour_type, notification_no, transfer_hours, actual_hours,
+            total_hours, total_credit, actual_hour_ratio, student_count,
+            class_name, confirm_status
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.semesterId}, #{item.teacherNo}, #{item.teacherName},
+                #{item.courseNo}, #{item.courseName}, #{item.hourType},
+                #{item.notificationNo}, #{item.transferHours}, #{item.actualHours},
+                #{item.totalHours}, #{item.totalCredit}, NULL,
+                #{item.studentCount}, #{item.className}, 0
+            )
+        </foreach>
+    </insert>
+
+    <update id="updateActualHours">
+        UPDATE WORKLOAD w
+        LEFT JOIN WORKLOAD own
+          ON own.teacher_name = #{currentTeacherName}
+         AND own.semester_id = w.semester_id
+         AND own.notification_no = w.notification_no
+         AND own.course_no = w.course_no
+        SET w.actual_hours = #{actualHours}
+        WHERE w.wl_id = #{wlId}
+          AND COALESCE(w.confirm_status, 0) = 0
+          AND (
+              w.teacher_name = #{currentTeacherName}
+              OR (w.notification_no IS NOT NULL AND TRIM(w.notification_no) != '' AND own.wl_id IS NOT NULL)
+          )
+    </update>
+
+    <update id="confirm">
+        UPDATE WORKLOAD w
+        LEFT JOIN WORKLOAD own
+          ON own.teacher_name = #{currentTeacherName}
+         AND own.semester_id = w.semester_id
+         AND own.notification_no = w.notification_no
+         AND own.course_no = w.course_no
+        SET w.confirm_status = 1
+        WHERE w.wl_id = #{wlId}
+          AND COALESCE(w.confirm_status, 0) = 0
+          AND (
+              w.teacher_name = #{currentTeacherName}
+              OR (w.notification_no IS NOT NULL AND TRIM(w.notification_no) != '' AND own.wl_id IS NOT NULL)
+          )
+    </update>
+
+    <update id="recalculateAllRatios">
+        UPDATE WORKLOAD w
+        SET actual_hour_ratio =
+            CASE
+                WHEN actual_hours IS NULL
+                  OR total_hours IS NULL
+                  OR total_hours = 0
+                THEN NULL
+                ELSE ROUND(actual_hours / total_hours * 100, 2)
+            END
+    </update>
+    <delete id="deleteBySemesterId">
+        DELETE FROM WORKLOAD
+        WHERE semester_id = #{semesterId}
+    </delete>
+
+    <select id="selectTeacherCompletion"
+            resultType="com.sdjzuxg.collegemanagesystem.dto.WorkloadTeacherCompletionDTO">
+        SELECT
+            teacher_no,
+            teacher_name,
+            COUNT(*) AS total_records,
+            SUM(CASE WHEN COALESCE(confirm_status, 0) = 1 THEN 1 ELSE 0 END) AS confirmed_records
+        FROM WORKLOAD
+        <where>
+            <if test="semesterId != null">
+                semester_id = #{semesterId}
+            </if>
+        </where>
+        GROUP BY teacher_no, teacher_name
+        ORDER BY teacher_name, teacher_no
+    </select>
+
+    <select id="selectDepartmentTeacherCompletion"
+            resultType="com.sdjzuxg.collegemanagesystem.dto.WorkloadTeacherCompletionDTO">
+        SELECT
+            w.teacher_no,
+            w.teacher_name,
+            COUNT(*) AS total_records,
+            SUM(CASE WHEN COALESCE(w.confirm_status, 0) = 1 THEN 1 ELSE 0 END) AS confirmed_records
+        FROM WORKLOAD w
+        <!-- 本系判定改走 TEACHER_DEPT 中间表：teacher_id → dept_id → 同系教师工号（不依赖 TEACHER.dept 字段） -->
+        WHERE w.teacher_no IN (
+            SELECT t.staff_no
+            FROM TEACHER_DEPT td
+            JOIN TEACHER t ON t.teacher_id = td.teacher_id
+            WHERE td.dept_id IN (
+                SELECT dept_id
+                FROM TEACHER_DEPT
+                WHERE teacher_id = #{teacherId}
+            )
+        )
+        <if test="semesterId != null">
+            AND w.semester_id = #{semesterId}
+        </if>
+        GROUP BY w.teacher_no, w.teacher_name
+        ORDER BY w.teacher_name, w.teacher_no
+    </select>
+</mapper>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.FinalExamMapper">
+
+    <resultMap id="BaseResultMap" type="com.sdjzuxg.collegemanagesystem.entity.FinalExam">
+        <id property="examId" column="exam_id"/>
+        <result property="courseName" column="course_name"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="room" column="room"/>
+        <result property="status" column="status"/>
+        <result property="mainTeacherName" column="main_teacher_name"/>
+        <result property="subTeacherName" column="sub_teacher_name"/>
+        <result property="subTeacher2Name" column="sub_teacher2_name"/>
+        <result property="subTeacher3Name" column="sub_teacher3_name"/>
+        <result property="teachingCampus" column="teaching_campus"/>
+        <result property="examCampus" column="exam_campus"/>
+        <result property="teachingDept" column="teaching_dept"/>
+        <result property="teachingTeacher" column="teaching_teacher"/>
+        <result property="invigilationCollege" column="invigilation_college"/>
+        <result property="className" column="class_name"/>
+        <result property="studentCount" column="student_count"/>
+        <association property="semester" javaType="com.sdjzuxg.collegemanagesystem.entity.Semester">
+            <id property="semesterId" column="semester_id"/>
+            <result property="semesterName" column="semester_name"/>
+            <result property="year" column="year"/>
+            <result property="isCurrent" column="is_current"/>
+        </association>
+    </resultMap>
+
+
+    <select id="selectBySemesterId" parameterType="Integer" resultMap="BaseResultMap">
+        SELECT fe.*, s.semester_name, s.year, s.is_current
+        FROM FINAL_EXAM fe
+                 LEFT JOIN SEMESTER s ON fe.semester_id = s.semester_id
+        WHERE fe.semester_id = #{semesterId}
+    </select>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT
+            fe.*,
+            s.semester_name,
+            s.year,
+            s.is_current,
+            GROUP_CONCAT(CASE WHEN fet.invigilate_role = '主监考' THEN t.name END) as main_teacher_name,
+            GROUP_CONCAT(CASE WHEN fet.invigilate_role IN ('副监考', '副监考1') THEN t.name END) as sub_teacher_name,
+            GROUP_CONCAT(CASE WHEN fet.invigilate_role = '副监考2' THEN t.name END) as sub_teacher2_name,
+            GROUP_CONCAT(CASE WHEN fet.invigilate_role = '副监考3' THEN t.name END) as sub_teacher3_name
+        FROM FINAL_EXAM fe
+        LEFT JOIN SEMESTER s ON fe.semester_id = s.semester_id
+        LEFT JOIN FINAL_EXAM_TEACHER fet ON fe.exam_id = fet.exam_id
+        LEFT JOIN TEACHER t ON fet.teacher_id = t.teacher_id
+        <where>
+            <if test="query.courseName != null and query.courseName != ''">
+                AND fe.course_name LIKE CONCAT('%', #{query.courseName}, '%')
+            </if>
+            <if test="query.semesterId != null">
+                AND fe.semester_id = #{query.semesterId}
+            </if>
+            <if test="query.status != null and query.status != ''">
+                AND fe.status = #{query.status}
+            </if>
+            <if test="query.room != null and query.room != ''">
+                AND fe.room LIKE CONCAT('%', #{query.room}, '%')
+            </if>
+            <if test="query.teacherId != null">
+                AND fe.exam_id IN (
+                    SELECT exam_id FROM FINAL_EXAM_TEACHER WHERE teacher_id = #{query.teacherId}
+                )
+            </if>
+            <if test="query.teacherName != null and query.teacherName != ''">
+                AND fe.exam_id IN (
+                    SELECT fet2.exam_id
+                    FROM FINAL_EXAM_TEACHER fet2
+                    LEFT JOIN TEACHER t2 ON fet2.teacher_id = t2.teacher_id
+                    WHERE t2.name LIKE CONCAT('%', #{query.teacherName}, '%')
+                )
+            </if>
+            <if test="query.startTime != null and query.startTime != ''">
+                AND fe.start_time &gt;= #{query.startTime}
+            </if>
+            <if test="query.endTime != null and query.endTime != ''">
+                AND fe.end_time &lt;= #{query.endTime}
+            </if>
+        </where>
+        GROUP BY fe.exam_id
+        ORDER BY fe.exam_id DESC
+        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+    </select>
+
+    <select id="countByCondition" resultType="long">
+        SELECT COUNT(DISTINCT fe.exam_id)
+        FROM FINAL_EXAM fe
+        LEFT JOIN FINAL_EXAM_TEACHER fet ON fe.exam_id = fet.exam_id
+        LEFT JOIN TEACHER t ON fet.teacher_id = t.teacher_id
+        <where>
+            <if test="query.courseName != null and query.courseName != ''">
+                AND fe.course_name LIKE CONCAT('%', #{query.courseName}, '%')
+            </if>
+            <if test="query.semesterId != null">
+                AND fe.semester_id = #{query.semesterId}
+            </if>
+            <if test="query.status != null and query.status != ''">
+                AND fe.status = #{query.status}
+            </if>
+            <if test="query.room != null and query.room != ''">
+                AND fe.room LIKE CONCAT('%', #{query.room}, '%')
+            </if>
+            <if test="query.teacherId != null">
+                AND fe.exam_id IN (
+                    SELECT exam_id FROM FINAL_EXAM_TEACHER WHERE teacher_id = #{query.teacherId}
+                )
+            </if>
+            <if test="query.teacherName != null and query.teacherName != ''">
+                AND fe.exam_id IN (
+                    SELECT fet2.exam_id
+                    FROM FINAL_EXAM_TEACHER fet2
+                    LEFT JOIN TEACHER t2 ON fet2.teacher_id = t2.teacher_id
+                    WHERE t2.name LIKE CONCAT('%', #{query.teacherName}, '%')
+                )
+            </if>
+            <if test="query.startTime != null and query.startTime != ''">
+                AND fe.start_time &gt;= #{query.startTime}
+            </if>
+            <if test="query.endTime != null and query.endTime != ''">
+                AND fe.end_time &lt;= #{query.endTime}
+            </if>
+        </where>
+    </select>
+
+    <insert id="batchInsert" useGeneratedKeys="true" keyProperty="examId">
+        INSERT INTO FINAL_EXAM (course_name, semester_id, start_time, end_time, room, status, teaching_campus, exam_campus, teaching_dept, teaching_teacher, invigilation_college, class_name, student_count)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.courseName}, #{item.semester.semesterId}, #{item.startTime}, #{item.endTime}, #{item.room}, #{item.status}, #{item.teachingCampus}, #{item.examCampus}, #{item.teachingDept}, #{item.teachingTeacher}, #{item.invigilationCollege}, #{item.className}, #{item.studentCount})
+        </foreach>
+    </insert>
+
+
+
+    <delete id="batchDeleteByIds">
+        DELETE FROM FINAL_EXAM WHERE exam_id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

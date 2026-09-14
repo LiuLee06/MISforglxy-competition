@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.RoleMenuMapper">
+    <select id="selectAll" resultType="com.sdjzuxg.collegemanagesystem.entity.RoleMenu">
+        SELECT * FROM ROLE_MENU
+    </select>
+    <select id="selectByRoleIdAndMenuId" resultType="com.sdjzuxg.collegemanagesystem.entity.RoleMenu">
+        SELECT * FROM ROLE_MENU WHERE role_id = #{roleId} AND menu_id = #{menuId}
+    </select>
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.RoleMenu">
+        INSERT INTO ROLE_MENU (role_id, menu_id) VALUES (#{roleId}, #{menuId})
+    </insert>
+    <update id="update">
+        UPDATE ROLE_MENU SET menu_id = #{newMenuId} WHERE role_id = #{roleId} AND menu_id = #{oldMenuId}
+    </update>
+    <delete id="deleteByRoleIdAndMenuId">
+        DELETE FROM ROLE_MENU WHERE role_id = #{roleId} AND menu_id = #{menuId}
+    </delete>
+    <select id="selectByRoleId" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.RoleMenu">
+        SELECT * FROM ROLE_MENU WHERE role_id = #{roleId}
+    </select>
+    <select id="selectMenuIdsByRoleId" parameterType="Integer" resultType="Integer">
+        SELECT menu_id FROM ROLE_MENU WHERE role_id = #{roleId}
+    </select>
+    <delete id="deleteByRoleId" parameterType="Integer">
+        DELETE FROM ROLE_MENU WHERE role_id = #{roleId}
+    </delete>
+    <insert id="batchInsert">
+        INSERT INTO ROLE_MENU (role_id, menu_id) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.roleId}, #{item.menuId})
+        </foreach>
+    </insert>
+
+    <!-- 权限校验:查教师是否拥有某菜单路径的访问权限(对应前端 menus 数组) -->
+    <select id="existsByTeacherIdAndMenuUrl" resultType="int">
+        SELECT COUNT(*) FROM TEACHER_ROLE tr
+        JOIN ROLE_MENU rm ON tr.role_id = rm.role_id
+        JOIN MENU m ON rm.menu_id = m.menu_id
+        WHERE tr.teacher_id = #{teacherId} AND m.menu_url = #{menuUrl}
+    </select>
+</mapper>

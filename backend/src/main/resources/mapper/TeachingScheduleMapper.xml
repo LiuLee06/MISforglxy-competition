@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.TeachingScheduleMapper">
+
+    <resultMap id="TeachingScheduleResultMap" type="com.sdjzuxg.collegemanagesystem.entity.TeachingSchedule">
+        <id column="notice_id" property="noticeId"/>
+        <result column="course_code" property="courseCode"/>
+        <result column="course_name" property="courseName"/>
+        <result column="teacher_name" property="teacherName"/>
+        <result column="class_name" property="className"/>
+        <result column="course_seq" property="courseSeq"/>
+        <result column="selected_student_count" property="selectedStudentCount"/>
+        <result column="credit" property="credit"/>
+        <result column="scheduled_hours" property="scheduledHours"/>
+        <result column="offering_department" property="offeringDepartment"/>
+        <result column="teacher_title" property="teacherTitle"/>
+        <result column="course_category" property="courseCategory"/>
+        <result column="course_nature" property="courseNature"/>
+        <result column="course_attribute" property="courseAttribute"/>
+        <result column="campus" property="campus"/>
+        <result column="teacher_id" property="teacherId"/>
+        <result column="plan_hour_unit" property="planHourUnit"/>
+        <result column="group_name" property="groupName"/>
+        <result column="scheduled_student_count" property="scheduledStudentCount"/>
+        <result column="actual_class_size" property="actualClassSize"/>
+        <result column="is_degree_course" property="isDegreeCourse"/>
+        <result column="lecture_weeks" property="lectureWeeks"/>
+        <result column="lab_weeks" property="labWeeks"/>
+        <result column="total_plan_hours" property="totalPlanHours"/>
+        <result column="experiment_weeks" property="experimentWeeks"/>
+        <result column="practice_weeks" property="practiceWeeks"/>
+        <result column="other_weeks" property="otherWeeks"/>
+        <result column="lecture_hours" property="lectureHours"/>
+        <result column="lab_hours" property="labHours"/>
+        <result column="experiment_hours" property="experimentHours"/>
+        <result column="practice_weeks_count" property="practiceWeeksCount"/>
+        <result column="arranged_hours" property="arrangedHours"/>
+        <result column="other_hours" property="otherHours"/>
+        <result column="weekly_hours" property="weeklyHours"/>
+        <result column="functional_area" property="functionalArea"/>
+        <result column="confirm_status" property="confirmStatus"/>
+        <result column="semester_id" property="semesterId"/>
+        <result column="major" property="major"/>
+    </resultMap>
+
+    <select id="findByConditions" resultMap="TeachingScheduleResultMap">
+        SELECT
+            notice_id,
+            course_code,
+            course_name,
+            teacher_name,
+            class_name,
+            course_seq,
+            selected_student_count,
+            credit,
+            scheduled_hours,
+            offering_department,
+            teacher_title,
+            course_category,
+            course_nature,
+            course_attribute,
+            campus,
+            teacher_id,
+            plan_hour_unit,
+            group_name,
+            scheduled_student_count,
+            actual_class_size,
+            is_degree_course,
+            lecture_weeks,
+            lab_weeks,
+            total_plan_hours,
+            experiment_weeks,
+            practice_weeks,
+            other_weeks,
+            lecture_hours,
+            lab_hours,
+            experiment_hours,
+            practice_weeks_count,
+            arranged_hours,
+            other_hours,
+            weekly_hours,
+            functional_area,
+            confirm_status,
+            semester_id,
+            major
+        FROM TEACHING_SCHEDULE
+        <where>
+            <if test="teacherName != null and teacherName != ''">
+                AND teacher_name LIKE CONCAT('%', #{teacherName}, '%')
+            </if>
+            <if test="courseName != null and courseName != ''">
+                AND course_name LIKE CONCAT('%', #{courseName}, '%')
+            </if>
+            <if test="major != null and major != ''">
+                AND major LIKE CONCAT('%', #{major}, '%')
+            </if>
+            <if test="semesterId != null">
+                AND semester_id = #{semesterId}
+            </if>
+            <if test="confirmStatus != null">
+                AND confirm_status = #{confirmStatus}
+            </if>
+        </where>
+    </select>
+
+    <!--
+    <select id="findEditableFieldsByTeacher" resultMap="TeachingScheduleResultMap">
+        SELECT
+            notice_id,
+            teacher_name,
+            lecture_weeks,
+            experiment_weeks,
+            practice_weeks,
+            lab_weeks,
+            weekly_hours,
+            functional_area,
+            course_code,
+            course_name,
+            class_name,
+            course_seq,
+            selected_student_count,
+            credit,
+            scheduled_hours,
+            offering_department,
+            teacher_title,
+            course_category,
+            course_nature,
+            course_attribute,
+            campus,
+            teacher_id,
+            plan_hour_unit,
+            group_name,
+            scheduled_student_count,
+            actual_class_size,
+            is_degree_course,
+            total_plan_hours,
+            other_weeks,
+            lecture_hours,
+            lab_hours,
+            experiment_hours,
+            practice_weeks_count,
+            arranged_hours,
+            other_hours,
+            confirm_status,
+            semester_id,
+            major
+        FROM TEACHING_SCHEDULE
+        WHERE teacher_name LIKE CONCAT('%', #{teacherName}, '%')
+    </select>
+    -->
+
+    <update id="updateEditableFields">
+        UPDATE TEACHING_SCHEDULE
+        <set>
+            <if test="teacherName != null and teacherName != ''">
+                teacher_name = #{teacherName},
+            </if>
+            <if test="lectureWeeks != null and lectureWeeks != ''">
+                lecture_weeks = #{lectureWeeks},
+            </if>
+            <if test="experimentWeeks != null and experimentWeeks != ''">
+                experiment_weeks = #{experimentWeeks},
+            </if>
+            <if test="practiceWeeks != null and practiceWeeks != ''">
+                practice_weeks = #{practiceWeeks},
+            </if>
+            <if test="labWeeks != null and labWeeks != ''">
+                lab_weeks = #{labWeeks},
+            </if>
+            <if test="weeklyHours != null and weeklyHours != ''">
+                weekly_hours = #{weeklyHours},
+            </if>
+            <if test="functionalArea != null and functionalArea != ''">
+                functional_area = #{functionalArea},
+            </if>
+        </set>
+        WHERE notice_id = #{noticeId}
+    </update>
+
+    <update id="confirmByNoticeId">
+        UPDATE TEACHING_SCHEDULE
+        SET confirm_status = 1
+        WHERE notice_id = #{noticeId}
+    </update>
+
+    <!--
+    <select id="findAll" resultMap="TeachingScheduleResultMap">
+        SELECT
+            notice_id,
+            course_code,
+            course_name,
+            teacher_name,
+            class_name,
+            course_seq,
+            selected_student_count,
+            credit,
+            scheduled_hours,
+            offering_department,
+            teacher_title,
+            course_category,
+            course_nature,
+            course_attribute,
+            campus,
+            teacher_id,
+            plan_hour_unit,
+            group_name,
+            scheduled_student_count,
+            actual_class_size,
+            is_degree_course,
+            lecture_weeks,
+            lab_weeks,
+            total_plan_hours,
+            experiment_weeks,
+            practice_weeks,
+            other_weeks,
+            lecture_hours,
+            lab_hours,
+            experiment_hours,
+            practice_weeks_count,
+            arranged_hours,
+            other_hours,
+            weekly_hours,
+            functional_area,
+            confirm_status,
+            semester_id,
+            major
+        FROM TEACHING_SCHEDULE
+    </select>
+    -->
+
+    <!-- 按通知单编号查询单条教学任务 -->
+    <select id="findByNoticeId" resultMap="TeachingScheduleResultMap">
+        SELECT
+            notice_id,
+            course_code,
+            course_name,
+            teacher_name,
+            class_name,
+            course_seq,
+            selected_student_count,
+            credit,
+            scheduled_hours,
+            offering_department,
+            teacher_title,
+            course_category,
+            course_nature,
+            course_attribute,
+            campus,
+            teacher_id,
+            plan_hour_unit,
+            group_name,
+            scheduled_student_count,
+            actual_class_size,
+            is_degree_course,
+            lecture_weeks,
+            lab_weeks,
+            total_plan_hours,
+            experiment_weeks,
+            practice_weeks,
+            other_weeks,
+            lecture_hours,
+            lab_hours,
+            experiment_hours,
+            practice_weeks_count,
+            arranged_hours,
+            other_hours,
+            weekly_hours,
+            functional_area,
+            confirm_status,
+            semester_id,
+            major
+        FROM TEACHING_SCHEDULE
+        WHERE notice_id = #{noticeId}
+    </select>
+
+    <!-- 新增单条教学任务（管理员） -->
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.TeachingSchedule">
+        INSERT INTO TEACHING_SCHEDULE (
+            notice_id,
+            course_code,
+            course_name,
+            teacher_name,
+            class_name,
+            course_seq,
+            selected_student_count,
+            credit,
+            scheduled_hours,
+            offering_department,
+            teacher_title,
+            course_category,
+            course_nature,
+            course_attribute,
+            campus,
+            teacher_id,
+            plan_hour_unit,
+            group_name,
+            scheduled_student_count,
+            actual_class_size,
+            is_degree_course,
+            lecture_weeks,
+            lab_weeks,
+            total_plan_hours,
+            experiment_weeks,
+            practice_weeks,
+            other_weeks,
+            lecture_hours,
+            lab_hours,
+            experiment_hours,
+            practice_weeks_count,
+            arranged_hours,
+            other_hours,
+            weekly_hours,
+            functional_area,
+            confirm_status,
+            semester_id,
+            major
+        ) VALUES (
+            #{noticeId},
+            #{courseCode},
+            #{courseName},
+            #{teacherName},
+            #{className},
+            #{courseSeq},
+            #{selectedStudentCount},
+            #{credit},
+            #{scheduledHours},
+            #{offeringDepartment},
+            #{teacherTitle},
+            #{courseCategory},
+            #{courseNature},
+            #{courseAttribute},
+            #{campus},
+            #{teacherId},
+            #{planHourUnit},
+            #{groupName},
+            #{scheduledStudentCount},
+            #{actualClassSize},
+            #{isDegreeCourse},
+            #{lectureWeeks},
+            #{labWeeks},
+            #{totalPlanHours},
+            #{experimentWeeks},
+            #{practiceWeeks},
+            #{otherWeeks},
+            #{lectureHours},
+            #{labHours},
+            #{experimentHours},
+            #{practiceWeeksCount},
+            #{arrangedHours},
+            #{otherHours},
+            #{weeklyHours},
+            #{functionalArea},
+            #{confirmStatus},
+            #{semesterId},
+            #{major}
+        )
+    </insert>
+
+    <!-- 更新单条教学任务（管理员） -->
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.TeachingSchedule">
+        UPDATE TEACHING_SCHEDULE
+        SET
+            course_code = #{courseCode},
+            course_name = #{courseName},
+            teacher_name = #{teacherName},
+            class_name = #{className},
+            course_seq = #{courseSeq},
+            selected_student_count = #{selectedStudentCount},
+            credit = #{credit},
+            scheduled_hours = #{scheduledHours},
+            offering_department = #{offeringDepartment},
+            teacher_title = #{teacherTitle},
+            course_category = #{courseCategory},
+            course_nature = #{courseNature},
+            course_attribute = #{courseAttribute},
+            campus = #{campus},
+            teacher_id = #{teacherId},
+            plan_hour_unit = #{planHourUnit},
+            group_name = #{groupName},
+            scheduled_student_count = #{scheduledStudentCount},
+            actual_class_size = #{actualClassSize},
+            is_degree_course = #{isDegreeCourse},
+            lecture_weeks = #{lectureWeeks},
+            lab_weeks = #{labWeeks},
+            total_plan_hours = #{totalPlanHours},
+            experiment_weeks = #{experimentWeeks},
+            practice_weeks = #{practiceWeeks},
+            other_weeks = #{otherWeeks},
+            lecture_hours = #{lectureHours},
+            lab_hours = #{labHours},
+            experiment_hours = #{experimentHours},
+            practice_weeks_count = #{practiceWeeksCount},
+            arranged_hours = #{arrangedHours},
+            other_hours = #{otherHours},
+            weekly_hours = #{weeklyHours},
+            functional_area = #{functionalArea},
+            confirm_status = #{confirmStatus},
+            semester_id = #{semesterId},
+            major = #{major}
+        WHERE notice_id = #{noticeId}
+    </update>
+
+    <insert id="batchUpsert">
+        INSERT INTO TEACHING_SCHEDULE (
+            notice_id,
+            course_code,
+            course_name,
+            teacher_name,
+            class_name,
+            course_seq,
+            selected_student_count,
+            credit,
+            scheduled_hours,
+            offering_department,
+            teacher_title,
+            course_category,
+            course_nature,
+            course_attribute,
+            campus,
+            teacher_id,
+            plan_hour_unit,
+            group_name,
+            scheduled_student_count,
+            actual_class_size,
+            is_degree_course,
+            lecture_weeks,
+            lab_weeks,
+            total_plan_hours,
+            experiment_weeks,
+            practice_weeks,
+            other_weeks,
+            lecture_hours,
+            lab_hours,
+            experiment_hours,
+            practice_weeks_count,
+            arranged_hours,
+            other_hours,
+            weekly_hours,
+            functional_area,
+            confirm_status,
+            semester_id,
+            major
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.noticeId},
+                #{item.courseCode},
+                #{item.courseName},
+                #{item.teacherName},
+                #{item.className},
+                #{item.courseSeq},
+                #{item.selectedStudentCount},
+                #{item.credit},
+                #{item.scheduledHours},
+                #{item.offeringDepartment},
+                #{item.teacherTitle},
+                #{item.courseCategory},
+                #{item.courseNature},
+                #{item.courseAttribute},
+                #{item.campus},
+                #{item.teacherId},
+                #{item.planHourUnit},
+                #{item.groupName},
+                #{item.scheduledStudentCount},
+                #{item.actualClassSize},
+                #{item.isDegreeCourse},
+                #{item.lectureWeeks},
+                #{item.labWeeks},
+                #{item.totalPlanHours},
+                #{item.experimentWeeks},
+                #{item.practiceWeeks},
+                #{item.otherWeeks},
+                #{item.lectureHours},
+                #{item.labHours},
+                #{item.experimentHours},
+                #{item.practiceWeeksCount},
+                #{item.arrangedHours},
+                #{item.otherHours},
+                #{item.weeklyHours},
+                #{item.functionalArea},
+                #{item.confirmStatus},
+                #{item.semesterId},
+                #{item.major}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            course_code = VALUES(course_code),
+            course_name = VALUES(course_name),
+            teacher_name = VALUES(teacher_name),
+            class_name = VALUES(class_name),
+            course_seq = VALUES(course_seq),
+            selected_student_count = VALUES(selected_student_count),
+            credit = VALUES(credit),
+            scheduled_hours = VALUES(scheduled_hours),
+            offering_department = VALUES(offering_department),
+            teacher_title = VALUES(teacher_title),
+            course_category = VALUES(course_category),
+            course_nature = VALUES(course_nature),
+            course_attribute = VALUES(course_attribute),
+            campus = VALUES(campus),
+            teacher_id = VALUES(teacher_id),
+            plan_hour_unit = VALUES(plan_hour_unit),
+            group_name = VALUES(group_name),
+            scheduled_student_count = VALUES(scheduled_student_count),
+            actual_class_size = VALUES(actual_class_size),
+            is_degree_course = VALUES(is_degree_course),
+            lecture_weeks = VALUES(lecture_weeks),
+            lab_weeks = VALUES(lab_weeks),
+            total_plan_hours = VALUES(total_plan_hours),
+            experiment_weeks = VALUES(experiment_weeks),
+            practice_weeks = VALUES(practice_weeks),
+            other_weeks = VALUES(other_weeks),
+            lecture_hours = VALUES(lecture_hours),
+            lab_hours = VALUES(lab_hours),
+            experiment_hours = VALUES(experiment_hours),
+            practice_weeks_count = VALUES(practice_weeks_count),
+            arranged_hours = VALUES(arranged_hours),
+            other_hours = VALUES(other_hours),
+            weekly_hours = VALUES(weekly_hours),
+            functional_area = VALUES(functional_area),
+            confirm_status = VALUES(confirm_status),
+            semester_id = VALUES(semester_id),
+            major = VALUES(major)
+    </insert>
+
+    <!-- 按通知单编号删除教学任务（管理员） -->
+    <delete id="deleteByNoticeId">
+        DELETE FROM TEACHING_SCHEDULE
+        WHERE notice_id = #{noticeId}
+    </delete>
+
+    <delete id="deleteBySemesterId">
+        DELETE FROM TEACHING_SCHEDULE
+        WHERE semester_id = #{semesterId}
+    </delete>
+
+</mapper>

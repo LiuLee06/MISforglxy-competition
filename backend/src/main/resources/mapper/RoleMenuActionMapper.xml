@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.RoleMenuActionMapper">
+    <select id="selectAll" resultType="com.sdjzuxg.collegemanagesystem.entity.RoleMenuAction">
+        SELECT * FROM ROLE_MENU_ACTION
+    </select>
+    <select id="selectById" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.RoleMenuAction">
+        SELECT * FROM ROLE_MENU_ACTION WHERE id = #{id}
+    </select>
+    <select id="selectByRoleId" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.RoleMenuAction">
+        SELECT * FROM ROLE_MENU_ACTION WHERE role_id = #{roleId}
+    </select>
+    <select id="selectActionCodesByRoleId" parameterType="Integer" resultType="String">
+        SELECT a.action_code FROM ROLE_MENU_ACTION rma
+        JOIN MENU_ACTION a ON rma.action_id = a.action_id
+        WHERE rma.role_id = #{roleId}
+    </select>
+    <select id="selectActionCodesByRoleIds" resultType="String">
+        SELECT DISTINCT a.action_code FROM ROLE_MENU_ACTION rma
+        JOIN MENU_ACTION a ON rma.action_id = a.action_id
+        WHERE rma.role_id IN
+        <foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
+            #{roleId}
+        </foreach>
+    </select>
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.RoleMenuAction">
+        INSERT INTO ROLE_MENU_ACTION (role_id, action_id) VALUES (#{roleId}, #{actionId})
+    </insert>
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.RoleMenuAction">
+        UPDATE ROLE_MENU_ACTION SET role_id = #{roleId}, action_id = #{actionId} WHERE id = #{id}
+    </update>
+    <delete id="deleteById" parameterType="Integer">
+        DELETE FROM ROLE_MENU_ACTION WHERE id = #{id}
+    </delete>
+    <delete id="deleteByRoleId" parameterType="Integer">
+        DELETE FROM ROLE_MENU_ACTION WHERE role_id = #{roleId}
+    </delete>
+    <delete id="deleteByRoleIdAndActionId">
+        DELETE FROM ROLE_MENU_ACTION WHERE role_id = #{roleId} AND action_id = #{actionId}
+    </delete>
+
+    <!-- 超级管理员专用：读取 MENU_ACTION 表的所有按钮权限 code，不依赖 ROLE_MENU_ACTION 关联 -->
+    <select id="selectAllActionCodes" resultType="String">
+        SELECT DISTINCT action_code FROM MENU_ACTION WHERE action_code IS NOT NULL AND action_code != ''
+    </select>
+
+    <!-- 权限校验:查教师是否拥有某 actionCode -->
+    <select id="existsByTeacherIdAndCode" resultType="int">
+        SELECT COUNT(*) FROM TEACHER_ROLE tr
+        JOIN ROLE_MENU_ACTION rma ON tr.role_id = rma.role_id
+        JOIN MENU_ACTION a ON rma.action_id = a.action_id
+        WHERE tr.teacher_id = #{teacherId} AND a.action_code = #{code}
+    </select>
+</mapper>

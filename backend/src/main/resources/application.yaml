@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: college-manage-system
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 1000MB
+      file-size-threshold: 2KB
+  datasource:
+    url: jdbc:mysql://47.104.182.229:3306/acad_inte_sys?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&useServerPrepStmts=true
+    username: glxyxg
+    password: glxy
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+server:
+  port: 8888
+# 附件存储目录:本地开发默认 ./uploads/(即 jar 启动目录下的 uploads);
+# 部署时改为服务器绝对路径,如 /opt/app/uploads/,上传的附件文件都存放在该目录下
+file:
+  upload-path: ./uploads/
+#  servlet:
+#    context-path: /api
+mybatis:
+  mapper-locations: classpath*:mapper/*Mapper.xml
+  configuration:
+    map-underscore-to-camel-case: true #驼峰命名
+
+

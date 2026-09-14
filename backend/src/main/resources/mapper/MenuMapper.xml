@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.MenuMapper">
+    <select id="selectAll" resultType="com.sdjzuxg.collegemanagesystem.entity.Menu">
+        SELECT * FROM MENU
+    </select>
+    <select id="selectById" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.Menu">
+        SELECT * FROM MENU WHERE menu_id = #{menuId}
+    </select>
+    <select id="selectByRoleId" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.Menu">
+        SELECT m.* FROM MENU m JOIN ROLE_MENU rm ON m.menu_id = rm.menu_id WHERE rm.role_id = #{roleId}
+    </select>
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.Menu">
+        INSERT INTO MENU (menu_name, parent_id, menu_url) VALUES (#{menuName}, #{parentMenu.menuId}, #{menuUrl})
+    </insert>
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.Menu">
+        UPDATE MENU SET menu_name = #{menuName}, parent_id = #{parentMenu.menuId}, menu_url = #{menuUrl} WHERE menu_id = #{menuId}
+    </update>
+    <delete id="deleteById" parameterType="Integer">
+        DELETE FROM MENU WHERE menu_id = #{menuId}
+    </delete>
+</mapper>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdjzuxg.collegemanagesystem.mapper.RoleMapper">
+    <select id="selectAll" resultType="com.sdjzuxg.collegemanagesystem.entity.Role">
+        SELECT * FROM ROLE
+    </select>
+    <select id="selectById" parameterType="Integer" resultType="com.sdjzuxg.collegemanagesystem.entity.Role">
+        SELECT * FROM ROLE WHERE role_id = #{roleId}
+    </select>
+    <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.Role">
+        INSERT INTO ROLE (role_name, role_desc) VALUES (#{roleName}, #{roleDesc})
+    </insert>
+    <update id="update" parameterType="com.sdjzuxg.collegemanagesystem.entity.Role">
+        UPDATE ROLE SET role_name = #{roleName}, role_desc = #{roleDesc} WHERE role_id = #{roleId}
+    </update>
+    <delete id="deleteById" parameterType="Integer">
+        DELETE FROM ROLE WHERE role_id = #{roleId}
+    </delete>
+    <select id="selectPage" resultType="com.sdjzuxg.collegemanagesystem.entity.Role">
+        SELECT * FROM ROLE
+        <where>
+            <if test="roleName != null and roleName != ''">
+                <choose>
+                    <when test="searchMode == 'exact'">
+                        role_name = #{roleName}
+                    </when>
+                    <otherwise>
+                        role_name LIKE CONCAT('%', #{roleName}, '%')
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+        ORDER BY role_id DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+    <select id="countByCondition" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM ROLE
+        <where>
+            <if test="roleName != null and roleName != ''">
+                <choose>
+                    <when test="searchMode == 'exact'">
+                        role_name = #{roleName}
+                    </when>
+                    <otherwise>
+                        role_name LIKE CONCAT('%', #{roleName}, '%')
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+    </select>
+</mapper>
