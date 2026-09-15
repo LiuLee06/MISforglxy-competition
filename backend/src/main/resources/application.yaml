@@ -8,9 +8,9 @@ spring:
       max-request-size: 1000MB
       file-size-threshold: 2KB
   datasource:
-    url: jdbc:mysql://47.104.182.229:3306/acad_inte_sys?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&useServerPrepStmts=true
-    username: glxyxg
-    password: glxy
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
@@ -36,4 +36,19 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true #驼峰命名
 
+
+
+ai:
+  provider: ${AI_PROVIDER:mock}
+  agent:
+    enabled: ${AI_AGENT_ENABLED:true}
+    max-history-messages: ${AI_MAX_HISTORY_MESSAGES:20}
+    max-tool-iterations: ${AI_MAX_TOOL_ITERATIONS:6}
+    max-tool-calls: ${AI_MAX_TOOL_CALLS:8}
+  deepseek:
+    base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    api-key: ${DEEPSEEK_API_KEY:}
+    model: ${DEEPSEEK_MODEL:deepseek-v4-flash}
+    thinking-enabled: ${DEEPSEEK_THINKING_ENABLED:false}
+    timeout-seconds: ${DEEPSEEK_TIMEOUT_SECONDS:60}
 

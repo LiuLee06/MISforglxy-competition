@@ -123,6 +123,7 @@
         <el-table-column prop="apply_time" label="申请时间" width="160" />
         <el-table-column prop="start_time" label="开始时间" width="160" />
         <el-table-column prop="end_time" label="结束时间" width="160" />
+        <el-table-column prop="purpose" label="申请用途" min-width="180" />
         <el-table-column prop="apply_status" label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.apply_status)">{{ row.apply_status }}</el-tag>

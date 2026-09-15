@@ -42,6 +42,7 @@ const loadApplies = async () => {
         teacher_name: a.teacher ? (a.teacher.name || a.teacher.teacherName) : '',
         teacher_id: a.teacher ? (a.teacher.teacherId || a.teacher.teacher_id) : '',
         applicant_name: a.applicantName || a.applicant_name || '',
+        purpose: a.purpose || a.remark || '',
         apply_time: a.applyTime ? formatDateTime(a.applyTime) : '',
         start_time: a.startTime ? formatDateTime(a.startTime) : '',
         end_time: a.endTime ? formatDateTime(a.endTime) : '',
@@ -122,6 +123,7 @@ const addApply = async (apply) => {
       room: { roomId: parseInt(apply.room_id.replace('R', '')) },
       teacher: { teacherId: teacherId },
       applicantName: isAdmin ? (userInfo.username || '管理员') : null,
+      purpose: apply.purpose || apply.remark || null,
       startTime: `${dateStr} ${apply.start_time}:00`,
       endTime: `${dateStr} ${apply.end_time}:00`,
       applyStatus: 0
@@ -139,7 +141,8 @@ const addApply = async (apply) => {
         start_time: `${dateStr} ${apply.start_time}`,
         end_time: `${dateStr} ${apply.end_time}`,
         apply_status: '待审核',
-        remark: apply.remark
+        remark: apply.remark,
+        purpose: apply.purpose || apply.remark || ''
       }
       applies.value.unshift(newApply)
       return newApply

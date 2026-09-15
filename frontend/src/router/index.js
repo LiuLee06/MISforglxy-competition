@@ -3,6 +3,11 @@ import { ElMessage } from 'element-plus'
 
 const routes = [
   {
+    path: '/ai-assistant',
+    name: 'AiAssistant',
+    component: () => import('../views/AiAssistant.vue')
+  },
+  {
     path: '/',
     redirect: '/login'
   },
@@ -146,7 +151,7 @@ router.beforeEach((to, from, next) => {
   const userInfoStr = localStorage.getItem('userInfo')
   const userInfo = userInfoStr ? JSON.parse(userInfoStr) : {}
 
-  if (!isLoggedIn || menus.length === 0) {
+  if (!isLoggedIn) {
     next('/login')
     return
   }
@@ -170,7 +175,7 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  const publicPaths = ['/profile', '/no-permission']
+  const publicPaths = ['/profile', '/no-permission', '/ai-assistant']
   if (publicPaths.includes(to.path)) {
     next()
     return

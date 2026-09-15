@@ -10,6 +10,7 @@ public class RoomApply {
     private MeetingRoom room;
     private Teacher teacher;
     private String applicantName;  // 申请人姓名（管理员申请时使用）
+    private String purpose;        // 申请用途/说明
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date applyTime;

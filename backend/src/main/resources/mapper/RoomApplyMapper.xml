@@ -9,6 +9,7 @@
         <result column="end_time" property="endTime"/>
         <result column="apply_status" property="applyStatus"/>
         <result column="applicant_name" property="applicantName"/>
+        <result column="purpose" property="purpose"/>
         <association property="room" javaType="com.sdjzuxg.collegemanagesystem.entity.MeetingRoom">
             <id column="room_id" property="roomId"/>
             <result column="room_name" property="roomName"/>
@@ -25,7 +26,7 @@
 
     <select id="selectAll" resultMap="RoomApplyMap">
         SELECT
-            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name,
+            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name, a.purpose,
             r.room_id, r.room_name, r.capacity, r.room_status, r.manager_id,
             t.teacher_id, t.name as teacher_name, t.dept as teacher_dept
         FROM ROOM_APPLY a
@@ -36,7 +37,7 @@
 
     <select id="selectById" parameterType="Integer" resultMap="RoomApplyMap">
         SELECT
-            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name,
+            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name, a.purpose,
             r.room_id, r.room_name, r.capacity, r.room_status, r.manager_id,
             t.teacher_id, t.name as teacher_name, t.dept as teacher_dept
         FROM ROOM_APPLY a
@@ -47,7 +48,7 @@
 
     <select id="selectByTeacherId" parameterType="Integer" resultMap="RoomApplyMap">
         SELECT
-            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name,
+            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name, a.purpose,
             r.room_id, r.room_name, r.capacity, r.room_status, r.manager_id,
             t.teacher_id, t.name as teacher_name, t.dept as teacher_dept
         FROM ROOM_APPLY a
@@ -59,7 +60,7 @@
 
     <select id="selectByStatus" parameterType="Integer" resultMap="RoomApplyMap">
         SELECT
-            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name,
+            a.apply_id, a.apply_time, a.start_time, a.end_time, a.apply_status, a.applicant_name, a.purpose,
             r.room_id, r.room_name, r.capacity, r.room_status, r.manager_id,
             t.teacher_id, t.name as teacher_name, t.dept as teacher_dept
         FROM ROOM_APPLY a
@@ -87,7 +88,7 @@
 
     <insert id="insert" parameterType="com.sdjzuxg.collegemanagesystem.entity.RoomApply" useGeneratedKeys="true" keyProperty="applyId">
         INSERT INTO ROOM_APPLY (
-        room_id, teacher_id, applicant_name, apply_time, start_time, end_time, apply_status
+        room_id, teacher_id, applicant_name, purpose, apply_time, start_time, end_time, apply_status
         ) VALUES (
         #{room.roomId},
         <choose>
@@ -95,6 +96,7 @@
             <otherwise>NULL</otherwise>
         </choose>,
         #{applicantName},
+        #{purpose},
         #{applyTime},
         #{startTime},
         #{endTime},
@@ -108,6 +110,7 @@
         room_id = #{room.roomId},
         <if test="teacher != null and teacher.teacherId != null">teacher_id = #{teacher.teacherId},</if>
         <if test="applicantName != null">applicant_name = #{applicantName},</if>
+        <if test="purpose != null">purpose = #{purpose},</if>
         start_time = #{startTime},
         end_time = #{endTime},
         apply_status = #{applyStatus}

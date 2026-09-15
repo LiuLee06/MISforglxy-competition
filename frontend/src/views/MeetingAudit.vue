@@ -44,6 +44,12 @@
             {{ row.teacher_name || row.applicant_name || '-' }}
           </template>
         </el-table-column>
+        <el-table-column prop="purpose" label="申请用途" min-width="180">
+          <template #default="{ row }">
+            <span v-if="row.purpose">{{ row.purpose }}</span>
+            <span v-else style="color: #c0c4cc;">-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="apply_time" label="申请时间" width="180" />
         <el-table-column prop="start_time" label="开始时间" width="180" />
         <el-table-column prop="end_time" label="结束时间" width="180" />

@@ -50,7 +50,9 @@
             </div>
           </el-popover>
 
-          <router-link to="/profile" class="header-link">
+          <router-link to="/ai-assistant" class="header-link">
+            <span>✨ AI 助手</span>
+          </router-link>          <router-link to="/profile" class="header-link">
             <el-icon class="header-icon"><User /></el-icon>
             <span>个人中心</span>
           </router-link>
@@ -71,7 +73,7 @@
             router
             @item-click="onMenuItemClick"
           >
-            <el-sub-menu v-if="showMenuGroup('teacher')" index="teacher">
+            <el-menu-item index="/ai-assistant">✨ AI 助手</el-menu-item>            <el-sub-menu v-if="showMenuGroup('teacher')" index="teacher">
               <template #title>
                 <el-icon><UserFilled /></el-icon>
                 <span>教师管理</span>
@@ -135,7 +137,7 @@
           </el-menu>
         </el-aside>
 
-        <el-main :class="{ 'main-mobile': isMobile }">
+        <el-main :class="[{ 'main-mobile': isMobile }, { 'ai-main': $route.path === '/ai-assistant' }]">
           <router-view></router-view>
         </el-main>
 
@@ -411,6 +413,11 @@ const handleLogout = () => {
 
 .logout-btn:hover {
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+.ai-main {
+  padding: 0 !important;
+  overflow: hidden;
 }
 
 /* 通知铃铛样式 */

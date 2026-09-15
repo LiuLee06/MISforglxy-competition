@@ -15,3 +15,9 @@ frontend/dist/
 # OS files
 Thumbs.db
 Desktop.ini
+backend/application-local.yaml
+backend/.env
+frontend/.env
+.env
+*.key
+backend/backend-run.log

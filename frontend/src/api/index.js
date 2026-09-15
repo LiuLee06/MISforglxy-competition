@@ -295,3 +295,11 @@ export const workloadApi = {
 }
 
 export default api
+export const agentApi = {
+  chat: (data) => api.post('/agent/chat', data),
+  getConversations: () => api.get('/agent/conversations'),
+  getMessages: (conversationId) => api.get('/agent/conversations/' + conversationId + '/messages'),
+  deleteConversation: (conversationId) => api.delete('/agent/conversations/' + conversationId),
+  confirmAction: (actionId) => api.post('/agent/actions/' + actionId + '/confirm'),
+  cancelAction: (actionId) => api.post('/agent/actions/' + actionId + '/cancel')
+}
