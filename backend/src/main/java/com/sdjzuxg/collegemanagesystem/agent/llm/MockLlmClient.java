@@ -5,6 +5,7 @@ import com.sdjzuxg.collegemanagesystem.agent.tool.AgentToolDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.regex.Pattern;
 @Component
 @ConditionalOnProperty(name = "ai.provider", havingValue = "mock", matchIfMissing = true)
 public class MockLlmClient implements LlmClient {
+    private static final ZoneId ZONE_ID = ZoneId.of("Asia/Shanghai");
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -40,11 +42,11 @@ public class MockLlmClient implements LlmClient {
         if (requestedTool != null && tools.stream().anyMatch(t -> t.getName().equals(requestedTool))) {
             Map<String,Object> args = new LinkedHashMap<>();
             if ("find_available_meeting_rooms".equals(selectedTool)) {
-                args.put("date", LocalDate.now().plusDays(1).toString()); args.put("startTime","14:00"); args.put("endTime","16:00"); args.put("minCapacity",0);
+                args.put("date", LocalDate.now(ZONE_ID).plusDays(1).toString()); args.put("startTime","14:00"); args.put("endTime","16:00"); args.put("minCapacity",0);
             } else if ("create_room_application".equals(selectedTool)) {
                 Matcher room = Pattern.compile("(\\d+)").matcher(input);
                 args.put("roomId", room.find() ? Integer.valueOf(room.group(1)) : 1);
-                args.put("date", LocalDate.now().plusDays(1).toString()); args.put("startTime","14:00"); args.put("endTime","16:00"); args.put("purpose","学院事务");
+                args.put("date", LocalDate.now(ZONE_ID).plusDays(1).toString()); args.put("startTime","14:00"); args.put("endTime","16:00"); args.put("purpose","学院事务");
             } else if ("search_teachers".equals(selectedTool)) {
                 args.put("keyword",""); args.put("department","");
             }

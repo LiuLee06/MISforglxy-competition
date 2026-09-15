@@ -4,6 +4,7 @@ import com.sdjzuxg.collegemanagesystem.common.Result;
 import com.sdjzuxg.collegemanagesystem.common.auth.AdminOnly;
 import com.sdjzuxg.collegemanagesystem.common.auth.ForbiddenException;
 import com.sdjzuxg.collegemanagesystem.common.auth.CurrentUserUtil;
+import com.sdjzuxg.collegemanagesystem.common.auth.RequireMenu;
 import com.sdjzuxg.collegemanagesystem.common.auth.LoginUser;
 import com.sdjzuxg.collegemanagesystem.entity.Notice;
 import com.sdjzuxg.collegemanagesystem.entity.Teacher;
@@ -64,6 +65,7 @@ public class NoticeController {
      * 数据级权限:发布人 publisherId / publisherType 必须与 CurrentUserUtil 中的调用者一致,
      * 或调用者为 admin(admin 可代表系统发布,publishDept 固定为"系统")。
      */
+    @RequireMenu("/notice-publish")
     @PostMapping("/publish")
     public Result publish(@RequestBody Map<String, Object> params) {
         Notice notice = new Notice();
@@ -77,7 +79,7 @@ public class NoticeController {
             return Result.error("400", validMsg);
         }
 
-        boolean success = noticeService.saveWithReceivers(notice, receiverIds);
+        boolean success = noticeService.publishForCurrentUser(notice, receiverIds, CurrentUserUtil.get());
         return success ? Result.success() : Result.error();
     }
 

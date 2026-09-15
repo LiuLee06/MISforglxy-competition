@@ -14,6 +14,9 @@ public interface WorkloadService {
     List<Workload> findMyRelated(String currentTeacherName, String courseName,
                                  String teacherName, Integer semesterId);
 
+    List<Workload> findMyRelatedByTeacherNo(String currentTeacherNo, String courseName,
+                                            String teacherNo, Integer semesterId);
+
     // 前端无页面调用，暂不启用（Controller、ServiceImpl、Mapper 已一并注释）
     /*
     List<Workload> findDepartmentWorkloads(Integer teacherId, String teacherName,

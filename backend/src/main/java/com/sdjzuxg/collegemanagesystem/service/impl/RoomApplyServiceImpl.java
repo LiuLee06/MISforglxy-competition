@@ -2,9 +2,13 @@ package com.sdjzuxg.collegemanagesystem.service.impl;
 
 import com.sdjzuxg.collegemanagesystem.entity.MeetingRoom;
 import com.sdjzuxg.collegemanagesystem.entity.RoomApply;
+import com.sdjzuxg.collegemanagesystem.entity.Teacher;
 import com.sdjzuxg.collegemanagesystem.mapper.MeetingRoomMapper;
 import com.sdjzuxg.collegemanagesystem.mapper.RoomApplyMapper;
 import com.sdjzuxg.collegemanagesystem.service.RoomApplyService;
+import com.sdjzuxg.collegemanagesystem.common.auth.LoginUser;
+import org.springframework.transaction.annotation.Transactional;
+import java.text.SimpleDateFormat;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
@@ -72,17 +76,42 @@ public class RoomApplyServiceImpl implements RoomApplyService {
 
     @Override
     public boolean save(RoomApply roomApply) {
+        return saveForCurrentUser(roomApply, com.sdjzuxg.collegemanagesystem.common.auth.CurrentUserUtil.get());
+    }
+
+    @Override
+    @Transactional
+    public boolean saveForCurrentUser(RoomApply roomApply, LoginUser user) {
+        if (user == null) throw new IllegalArgumentException("未登录");
+        if (roomApply == null || roomApply.getRoom() == null || roomApply.getRoom().getRoomId() == null
+                || roomApply.getRoom().getRoomId() <= 0) throw new IllegalArgumentException("请选择会议室");
+        if (roomApply.getPurpose() == null || roomApply.getPurpose().trim().isEmpty()) throw new IllegalArgumentException("预约用途不能为空");
+        if (roomApply.getPurpose().trim().length() > 500) throw new IllegalArgumentException("预约用途不能超过500字");
+        MeetingRoom room = meetingRoomMapper.selectByIdForUpdate(roomApply.getRoom().getRoomId());
+        if (room == null) throw new IllegalArgumentException("会议室不存在");
+        if (!Integer.valueOf(1).equals(room.getRoomStatus())) throw new IllegalArgumentException("会议室当前不可用");
+        if (roomApply.getStartTime() == null || roomApply.getEndTime() == null
+                || !roomApply.getEndTime().after(roomApply.getStartTime())) throw new IllegalArgumentException("结束时间必须晚于开始时间");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        dateFormat.setLenient(false);
+        String day = dateFormat.format(roomApply.getStartTime());
+        String endDay = dateFormat.format(roomApply.getEndTime());
+        if (!day.equals(endDay)) throw new IllegalArgumentException("预约必须在同一天内");
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+        if (!roomApplyMapper.findConflicts(room.getRoomId(), day, timeFormat.format(roomApply.getStartTime()), timeFormat.format(roomApply.getEndTime())).isEmpty())
+            throw new IllegalArgumentException("会议室当前时段已被占用");
+        roomApply.setRoom(room);
         roomApply.setApplyTime(new Date());
         roomApply.setApplyStatus(0);
-
-        if (roomApply.getTeacher() != null && roomApply.getTeacher().getTeacherId() != null
-                && roomApply.getTeacher().getTeacherId() == -1) {
+        if (user.isAdmin()) {
             roomApply.setTeacher(null);
-            if (roomApply.getApplicantName() == null || roomApply.getApplicantName().isEmpty()) {
-                roomApply.setApplicantName("ADMIN");
-            }
+            roomApply.setApplicantName("ADMIN");
+        } else {
+            Teacher teacher = new Teacher();
+            teacher.setTeacherId(user.getUserId());
+            roomApply.setTeacher(teacher);
+            roomApply.setApplicantName(null);
         }
-
         return roomApplyMapper.insert(roomApply) > 0;
     }
 

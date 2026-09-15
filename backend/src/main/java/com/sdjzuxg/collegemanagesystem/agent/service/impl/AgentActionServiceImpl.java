@@ -5,24 +5,49 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdjzuxg.collegemanagesystem.agent.dto.PendingActionDTO;
 import com.sdjzuxg.collegemanagesystem.agent.entity.AiActionLog;
 import com.sdjzuxg.collegemanagesystem.agent.entity.AiPendingAction;
+import com.sdjzuxg.collegemanagesystem.agent.entity.AiMessage;
 import com.sdjzuxg.collegemanagesystem.agent.mapper.AiActionLogMapper;
 import com.sdjzuxg.collegemanagesystem.agent.mapper.AiPendingActionMapper;
+import com.sdjzuxg.collegemanagesystem.agent.mapper.AiMessageMapper;
+import com.sdjzuxg.collegemanagesystem.agent.mapper.AiConversationMapper;
 import com.sdjzuxg.collegemanagesystem.agent.service.AgentActionService;
 import com.sdjzuxg.collegemanagesystem.agent.tool.*;
 import com.sdjzuxg.collegemanagesystem.common.auth.LoginUser;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Map;
+import java.util.LinkedHashMap;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class AgentActionServiceImpl implements AgentActionService {
     private final AiPendingActionMapper mapper;
     private final AiActionLogMapper logMapper;
     private final ObjectMapper objectMapper;
+    private final AiMessageMapper messageMapper;
+    private final AiConversationMapper conversationMapper;
+    @Value("${ai.time-zone:Asia/Shanghai}")
+    private String timeZone = "Asia/Shanghai";
+    private static final Logger log = LoggerFactory.getLogger(AgentActionServiceImpl.class);
 
     public AgentActionServiceImpl(AiPendingActionMapper mapper, AiActionLogMapper logMapper, ObjectMapper objectMapper) {
+        this(mapper, logMapper, objectMapper, null, null);
+    }
+
+    public AgentActionServiceImpl(AiPendingActionMapper mapper, AiActionLogMapper logMapper, ObjectMapper objectMapper, AiMessageMapper messageMapper) {
+        this(mapper, logMapper, objectMapper, messageMapper, null);
+    }
+
+    @Autowired
+    public AgentActionServiceImpl(AiPendingActionMapper mapper, AiActionLogMapper logMapper, ObjectMapper objectMapper, AiMessageMapper messageMapper, AiConversationMapper conversationMapper) {
         this.mapper=mapper; this.logMapper=logMapper; this.objectMapper=objectMapper;
+        this.messageMapper=messageMapper;
+        this.conversationMapper=conversationMapper;
     }
 
     @Override
@@ -31,7 +56,7 @@ public class AgentActionServiceImpl implements AgentActionService {
             AiPendingAction action=new AiPendingAction();
             action.setConversationId(conversationId); action.setUserId(user.getUserId()); action.setUserType(user.getUserType());
             action.setToolName(tool.getName()); action.setArgumentsJson(objectMapper.writeValueAsString(args));
-            action.setActionSummary(summary(tool.getName(), args)); action.setExpiresAt(LocalDateTime.now().plusMinutes(10)); action.setStatus("PENDING");
+            action.setActionSummary(summary(tool.getName(), args)); action.setExpiresAt(now().plusMinutes(10)); action.setStatus("PENDING");
             mapper.insert(action);
             return PendingActionDTO.from(action, tool.getDisplayName());
         } catch(JsonProcessingException e) {
@@ -45,7 +70,7 @@ public class AgentActionServiceImpl implements AgentActionService {
         if(user==null)return new ActionExecutionResult(false,"未登录","FORBIDDEN");
         AiPendingAction action=mapper.selectOwned(id,user.getUserId(),user.getUserType());
         if(action==null)return new ActionExecutionResult(false,"操作不存在或无权访问","FORBIDDEN");
-        if(action.getExpiresAt()==null||action.getExpiresAt().isBefore(LocalDateTime.now()))return new ActionExecutionResult(false,"该操作已过期","EXPIRED");
+        if(action.getExpiresAt()==null||action.getExpiresAt().isBefore(now())) { saveActionMessage(action,"该操作已过期"); return new ActionExecutionResult(false,"该操作已过期","EXPIRED"); }
         AgentTool tool=registry.get(action.getToolName());
         if(tool==null||!registry.canUse(user,tool))return new ActionExecutionResult(false,"当前账号已无权执行该操作","FORBIDDEN");
         if(tool.getRiskLevel()!=ToolRiskLevel.WRITE_CONFIRM)return new ActionExecutionResult(false,"该操作不是可确认的写操作","REJECTED");
@@ -57,24 +82,46 @@ public class AgentActionServiceImpl implements AgentActionService {
             long duration=System.currentTimeMillis()-started;
             if(result.isSuccess()){
                 mapper.markExecuted(id); log(user,action,tool,args,result.getData(),"EXECUTED",duration);
-                return new ActionExecutionResult(true,successMessage(tool.getName()),"EXECUTED");
+                String message=successMessage(tool.getName()); saveActionMessage(action,message); return new ActionExecutionResult(true,message,"EXECUTED");
             }
-            mapper.markFailed(id); log(user,action,tool,args,Map.of("error",result.getError()),"FAILED",duration);
+            mapper.markFailed(id); Map<String,Object> failure=new LinkedHashMap<>(); failure.put("error",result.getError()); log(user,action,tool,args,failure,"FAILED",duration);
+            saveActionMessage(action,result.getError()==null?"操作执行失败。":result.getError());
             return new ActionExecutionResult(false,result.getError(),"FAILED");
         } catch(Exception e) {
             mapper.markFailed(id); log(user,action,tool,Map.of(),"FAILED","FAILED",System.currentTimeMillis()-started);
+            log.warn("Agent action failed actionId={} conversationId={} userId={} exception={}", id, action.getConversationId(), user.getUserId(), e.getClass().getSimpleName());
+            saveActionMessage(action,"操作执行失败，请稍后重试。");
             return new ActionExecutionResult(false,"操作执行失败，请稍后重试","FAILED");
         }
     }
 
     @Override
     public boolean cancel(Long id,LoginUser user) {
-        return user!=null && mapper.cancel(id,user.getUserId(),user.getUserType())>0;
+        if(user==null)return false;
+        AiPendingAction action=mapper.selectOwned(id,user.getUserId(),user.getUserType());
+        boolean cancelled=mapper.cancel(id,user.getUserId(),user.getUserType())>0;
+        if(cancelled && action!=null) saveActionMessage(action,"用户已取消该操作。");
+        return cancelled;
     }
+
+    private void saveActionMessage(AiPendingAction action, String content) {
+        if (messageMapper == null || action == null || action.getConversationId() == null) return;
+        AiMessage message = new AiMessage();
+        message.setConversationId(action.getConversationId());
+        message.setRole("assistant");
+        message.setContent(content == null ? "操作未完成。" : content);
+        try { messageMapper.insert(message); if (conversationMapper != null) conversationMapper.touch(action.getConversationId()); }
+        catch (Exception e) { log.warn("Unable to persist action result conversationId={}", action.getConversationId(), e); }
+    }
+
+    private LocalDateTime now() { return LocalDateTime.now(ZoneId.of(timeZone == null ? "Asia/Shanghai" : timeZone)); }
 
     private String summary(String name,Map<String,Object> args) {
         if("create_room_application".equals(name)) return "会议室 "+args.get("roomId")+"，日期 "+args.get("date")+"，时间 "+args.get("startTime")+"—"+args.get("endTime")+"，用途："+args.get("purpose");
-        if("publish_notice".equals(name)) return "发布通知《"+args.get("title")+"》，接收人数："+((java.util.List<?>)args.getOrDefault("receiverIds",java.util.List.of())).size();
+        if("publish_notice".equals(name)) {
+            Object receivers=args.get("receiverIds"); int count=receivers instanceof java.util.List<?> list?list.size():0;
+            return "发布通知《"+args.get("title")+"》，接收人数："+count;
+        }
         if("remind_notice".equals(name)) return "提醒通知《"+args.getOrDefault("noticeTitle", "指定通知")+"》的未读人员";
         return "待确认执行："+name;
     }
@@ -91,6 +138,9 @@ public class AgentActionServiceImpl implements AgentActionService {
             AiActionLog log=new AiActionLog();log.setConversationId(action.getConversationId());log.setUserId(user.getUserId());log.setUserType(user.getUserType());
             log.setToolName(tool.getName());log.setRiskLevel(tool.getRiskLevel().name());log.setArgumentsJson(objectMapper.writeValueAsString(args));
             log.setResultJson(objectMapper.writeValueAsString(result));log.setStatus(status);log.setDurationMs(duration);logMapper.insert(log);
-        } catch(Exception ignored) {}
+        } catch(Exception e) {
+            log.warn("Unable to persist agent audit log conversationId={} tool={} exception={}",
+                    action == null ? null : action.getConversationId(), tool == null ? null : tool.getName(), e.getClass().getSimpleName());
+        }
     }
 }

@@ -10,6 +10,8 @@ import java.util.List;
 @Mapper
 public interface FinalExamMapper {
     List<FinalExam> selectBySemesterId(Integer semesterId);
+    List<FinalExam> selectBySemesterAndTeacher(@Param("semesterId") Integer semesterId,
+                                               @Param("teacherId") Integer teacherId);
 
     // 条件分页查询
     List<FinalExam> selectByCondition(@Param("query") ExamQueryDTO query);

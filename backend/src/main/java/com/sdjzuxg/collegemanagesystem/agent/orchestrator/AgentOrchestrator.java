@@ -15,10 +15,14 @@ import com.sdjzuxg.collegemanagesystem.entity.Teacher;
 import com.sdjzuxg.collegemanagesystem.service.TeacherService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.stream.Collectors;
 import java.util.*;
 
 @Service
 public class AgentOrchestrator implements AgentService {
+    private static final Logger log = LoggerFactory.getLogger(AgentOrchestrator.class);
     private final AgentConversationService conversations;
     private final AgentActionService actions;
     private final AgentToolRegistry registry;
@@ -55,20 +59,7 @@ public class AgentOrchestrator implements AgentService {
             Teacher teacher=teacherService.findById(user.getUserId());
             List<LlmMessage> messages=new ArrayList<>();
             messages.add(LlmMessage.system(promptBuilder.build(user,teacher)));
-            boolean awaitingToolResults=false;
-            for(AiMessage m:conversations.recentMessages(conversation.getConversationId(),maxHistoryMessages)) {
-                if("assistant".equals(m.getRole()) && m.getToolArguments()!=null && !m.getToolArguments().isBlank()) {
-                    messages.add(toLlmMessage(m));
-                    awaitingToolResults=true;
-                    continue;
-                }
-                if("tool".equals(m.getRole())) {
-                    if(awaitingToolResults) messages.add(toLlmMessage(m));
-                    continue;
-                }
-                messages.add(toLlmMessage(m));
-                awaitingToolResults=false;
-            }
+            messages.addAll(buildLegalHistory(conversations.recentMessages(conversation.getConversationId(), Math.max(maxHistoryMessages * 3, 30))));
             List<AgentToolDefinition> definitions=registry.getAvailableDefinitions(user);
             int totalCalls=0;
             for(int iteration=0;iteration<maxToolIterations;iteration++) {
@@ -97,9 +88,12 @@ public class AgentOrchestrator implements AgentService {
                     catch(Exception e){addToolError(messages,conversation.getConversationId(),call,"工具参数不是合法 JSON",trace);continue;}
                     if(tool.getRiskLevel()==ToolRiskLevel.WRITE_CONFIRM) {
                         PendingActionDTO pending=actions.create(conversation.getConversationId(),user,tool,args);
-                        saveLog(conversation.getConversationId(),user,tool,args,Map.of("actionId",pending.getActionId(),"status","PENDING"),"PREPARED",0L);
+                        Map<String,Object> prepared=new LinkedHashMap<>(); prepared.put("actionId",pending.getActionId()); prepared.put("status","PENDING");
+                        saveLog(conversation.getConversationId(),user,tool,args,prepared,"PREPARED",0L);
                         trace.add(new ToolTraceDTO(tool.getName(),tool.getDisplayName(),"pending_confirmation"));
-                        return AgentChatResponse.confirmation(conversation.getConversationId(),"我已经准备好以下操作，请确认后执行。",pending,trace);
+                        String confirmation="我已经准备好以下操作，请确认后执行。";
+                        saveAssistant(conversation.getConversationId(),confirmation);
+                        return AgentChatResponse.confirmation(conversation.getConversationId(),confirmation,pending,trace);
                     }
                     long started=System.currentTimeMillis();
                     AgentToolResult result;
@@ -110,14 +104,54 @@ public class AgentOrchestrator implements AgentService {
                     String content=objectMapper.writeValueAsString(envelope);
                     messages.add(LlmMessage.tool(call.getId(),call.getName(),content));
                     AiMessage tm=new AiMessage();tm.setConversationId(conversation.getConversationId());tm.setRole("tool");tm.setToolName(call.getName());tm.setToolCallId(call.getId());tm.setToolArguments(call.getArguments());tm.setToolResult(content);conversations.saveMessage(tm);
-                    Object logResult=result.isSuccess()?result.getData():Map.of("error",result.getError());
+                    Object logResult=result.isSuccess()?result.getData():failureResult(result.getError());
                     saveLog(conversation.getConversationId(),user,tool,args,logResult,result.isSuccess()?"SUCCESS":"FAILED",duration);
                 }
             }
             return AgentChatResponse.error(conversation.getConversationId(),"AI 工具处理达到上限，请稍后重试");
         } catch(Exception e) {
+            log.warn("Agent request failed conversationId={} userId={} userType={} exception={}",
+                    conversation.getConversationId(), user.getUserId(), user.getUserType(), e.getClass().getSimpleName(), e);
             return AgentChatResponse.error(conversation.getConversationId(),"AI 服务暂时不可用，请稍后重试。");
         }
+    }
+
+    private List<LlmMessage> buildLegalHistory(List<AiMessage> stored) {
+        List<List<LlmMessage>> groups = new ArrayList<>();
+        for (int i = 0; i < stored.size();) {
+            AiMessage current = stored.get(i);
+            if ("tool".equals(current.getRole())) { i++; continue; }
+            if ("assistant".equals(current.getRole()) && current.getToolArguments() != null && !current.getToolArguments().isBlank()) {
+                List<LlmMessage> group = new ArrayList<>();
+                group.add(toLlmMessage(current));
+                List<String> callIds;
+                try {
+                    List<Map<String,String>> calls = objectMapper.readValue(current.getToolArguments(), new TypeReference<>() {});
+                    callIds = calls.stream().map(call -> call.get("id")).filter(Objects::nonNull).toList();
+                } catch (Exception ignored) { i++; continue; }
+                int next = i + 1;
+                while (next < stored.size() && "tool".equals(stored.get(next).getRole())) {
+                    AiMessage tool = stored.get(next);
+                    if (tool.getToolCallId() != null && callIds.contains(tool.getToolCallId())) group.add(toLlmMessage(tool));
+                    next++;
+                }
+                Set<String> resultIds = group.stream().map(LlmMessage::getToolCallId)
+                        .filter(Objects::nonNull).collect(Collectors.toSet());
+                if (!callIds.isEmpty() && resultIds.containsAll(callIds)) groups.add(group);
+                i = next;
+                continue;
+            }
+            groups.add(List.of(toLlmMessage(current)));
+            i++;
+        }
+        int from = Math.max(0, groups.size() - maxHistoryMessages);
+        List<LlmMessage> result = new ArrayList<>();
+        for (List<LlmMessage> group : groups.subList(from, groups.size())) result.addAll(group);
+        return result;
+    }
+
+    private Map<String,Object> failureResult(String error) {
+        Map<String,Object> result = new LinkedHashMap<>(); result.put("error", error); return result;
     }
 
     private void addToolError(List<LlmMessage> messages,Long cid,LlmToolCall call,String error,List<ToolTraceDTO> trace){

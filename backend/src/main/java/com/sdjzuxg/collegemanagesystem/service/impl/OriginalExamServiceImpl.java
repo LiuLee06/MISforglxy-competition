@@ -33,6 +33,12 @@ public class OriginalExamServiceImpl implements OriginalExamService {
     }
 
     @Override
+    public List<OriginalExam> findBySemesterAndTeacher(Integer semesterId, Integer teacherId) {
+        if (semesterId == null || teacherId == null) return List.of();
+        return originalExamMapper.selectBySemesterAndTeacher(semesterId, teacherId);
+    }
+
+    @Override
     public PageResult<OriginalExam> pageQueryFlat(ExamQueryDTO queryDTO) {
         long total = originalExamMapper.countByConditionFlat(queryDTO);
         List<OriginalExam> records = originalExamMapper.selectByConditionFlat(queryDTO);

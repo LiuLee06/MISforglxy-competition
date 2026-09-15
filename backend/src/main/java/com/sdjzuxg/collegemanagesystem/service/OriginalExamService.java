@@ -9,6 +9,7 @@ import java.util.Map;
 
 public interface OriginalExamService {
     List<OriginalExam> findBySemesterId(Integer semesterId);
+    List<OriginalExam> findBySemesterAndTeacher(Integer semesterId, Integer teacherId);
 
     PageResult<OriginalExam> pageQueryFlat(ExamQueryDTO queryDTO);
     List<OriginalExam> batchInsert(List<OriginalExam> list);

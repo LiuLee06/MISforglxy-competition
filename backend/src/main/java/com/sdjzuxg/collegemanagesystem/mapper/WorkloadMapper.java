@@ -22,6 +22,11 @@ public interface WorkloadMapper {
                                    @Param("teacherName") String teacherName,
                                    @Param("semesterId") Integer semesterId);
 
+    List<Workload> selectMyRelatedByTeacherNo(@Param("currentTeacherNo") String currentTeacherNo,
+                                              @Param("courseName") String courseName,
+                                              @Param("teacherNo") String teacherNo,
+                                              @Param("semesterId") Integer semesterId);
+
     // 前端无页面调用，暂不启用
     /*
     List<Workload> selectDepartmentWorkloads(@Param("teacherId") Integer teacherId,

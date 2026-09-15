@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
@@ -26,7 +28,13 @@ public class DeepSeekClient implements LlmClient {
     public DeepSeekClient(DeepSeekProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
-        this.restClient = RestClient.builder().baseUrl(properties.getBaseUrl()).build();
+        if (properties.isThinkingEnabled()) {
+            throw new IllegalStateException("当前 Agent 版本不支持 DeepSeek Thinking Tool Calling，请将 ai.deepseek.thinking-enabled 设置为 false");
+        }
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(10));
+        requestFactory.setReadTimeout(Duration.ofSeconds(Math.max(1, properties.getTimeoutSeconds())));
+        this.restClient = RestClient.builder().baseUrl(properties.getBaseUrl()).requestFactory(requestFactory).build();
     }
 
     @Override
@@ -50,10 +58,10 @@ public class DeepSeekClient implements LlmClient {
                     .retrieve().body(String.class);
             return parse(raw);
         } catch (RestClientResponseException e) {
-            log.error("DeepSeek API returned HTTP {}: {}", e.getStatusCode().value(), e.getResponseBodyAsString());
+            log.error("DeepSeek API returned HTTP {}", e.getStatusCode().value());
             throw new IllegalStateException("AI 服务暂时不可用", e);
         } catch (RuntimeException e) {
-            log.error("DeepSeek API request failed: {}", e.getMessage(), e);
+            log.error("DeepSeek API request failed exception={}", e.getClass().getSimpleName(), e);
             throw new IllegalStateException("AI 服务暂时不可用", e);
         }
     }
@@ -65,10 +73,10 @@ public class DeepSeekClient implements LlmClient {
         if (message.getToolCallId() != null) payload.put("tool_call_id", message.getToolCallId());
         if (message.getName() != null) payload.put("name", message.getName());
         if (message.hasToolCalls()) {
-            payload.put("tool_calls", message.getToolCalls().stream().map(call -> Map.of(
-                    "id", call.getId(), "type", "function",
-                    "function", Map.of("name", call.getName(), "arguments", call.getArguments())
-            )).toList());
+            payload.put("tool_calls", message.getToolCalls().stream().map(call -> {
+                Map<String,Object> function = new LinkedHashMap<>(); function.put("name", call.getName()); function.put("arguments", call.getArguments());
+                Map<String,Object> toolCall = new LinkedHashMap<>(); toolCall.put("id", call.getId()); toolCall.put("type", "function"); toolCall.put("function", function); return toolCall;
+            }).toList());
         }
         return payload;
     }

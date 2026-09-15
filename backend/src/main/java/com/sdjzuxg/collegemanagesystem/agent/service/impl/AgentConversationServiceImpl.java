@@ -13,11 +13,10 @@ public class AgentConversationServiceImpl implements AgentConversationService {
     private final AiConversationMapper conversationMapper;
     private final AiMessageMapper messageMapper;
     private final AiPendingActionMapper pendingActionMapper;
-    private final AiActionLogMapper actionLogMapper;
     public AgentConversationServiceImpl(AiConversationMapper conversationMapper, AiMessageMapper messageMapper,
             AiPendingActionMapper pendingActionMapper, AiActionLogMapper actionLogMapper) {
         this.conversationMapper=conversationMapper; this.messageMapper=messageMapper;
-        this.pendingActionMapper=pendingActionMapper; this.actionLogMapper=actionLogMapper;
+        this.pendingActionMapper=pendingActionMapper;
     }
     public AiConversation getOrCreate(Long id, LoginUser user, String firstMessage) {
         if(id!=null) {
@@ -29,7 +28,7 @@ public class AgentConversationServiceImpl implements AgentConversationService {
         c.setTitle(firstMessage==null?"学院行政助手":firstMessage.substring(0,Math.min(80,firstMessage.length())));
         c.setStatus("ACTIVE"); conversationMapper.insert(c); return c;
     }
-    public void saveMessage(AiMessage m){messageMapper.insert(m);}
+    public void saveMessage(AiMessage m){if(m == null)return; messageMapper.insert(m); if(m.getConversationId() != null) conversationMapper.touch(m.getConversationId());}
     public List<AiMessage> recentMessages(Long id,int limit){List<AiMessage> l=messageMapper.selectRecent(id,limit); Collections.reverse(l); return l;}
     public List<AiConversation> list(LoginUser user){return conversationMapper.selectByUser(user.getUserId(),user.getUserType());}
     public List<AiMessage> listMessages(Long id,LoginUser user){
@@ -41,8 +40,7 @@ public class AgentConversationServiceImpl implements AgentConversationService {
         if (id == null || conversationMapper.selectOwned(id, user.getUserId(), user.getUserType()) == null) {
             return false;
         }
-        pendingActionMapper.deleteByConversationId(id);
-        actionLogMapper.deleteByConversationId(id);
+        pendingActionMapper.deleteUnfinishedByConversationId(id);
         messageMapper.deleteByConversationId(id);
         return conversationMapper.deleteOwned(id, user.getUserId(), user.getUserType()) > 0;
     }

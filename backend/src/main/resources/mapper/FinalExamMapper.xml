@@ -36,6 +36,15 @@
         WHERE fe.semester_id = #{semesterId}
     </select>
 
+    <select id="selectBySemesterAndTeacher" resultMap="BaseResultMap">
+        SELECT fe.*, s.semester_name, s.year, s.is_current
+        FROM FINAL_EXAM fe
+        LEFT JOIN SEMESTER s ON fe.semester_id = s.semester_id
+        INNER JOIN FINAL_EXAM_TEACHER fet ON fe.exam_id = fet.exam_id
+        WHERE fe.semester_id = #{semesterId} AND fet.teacher_id = #{teacherId}
+        ORDER BY fe.start_time, fe.exam_id
+    </select>
+
     <select id="selectByCondition" resultMap="BaseResultMap">
         SELECT
             fe.*,

@@ -3,6 +3,11 @@ package com.sdjzuxg.collegemanagesystem.agent.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public final class AgentToolSupport {
     private AgentToolSupport() {}
@@ -25,5 +30,17 @@ public final class AgentToolSupport {
             if(item instanceof Number n)result.add(n.intValue()); else result.add(Integer.valueOf(String.valueOf(item)));
         }
         return result;
+    }
+
+    public static void validateDateTimeRange(String date, String start, String end) {
+        try {
+            LocalDate d = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE);
+            LocalTime s = LocalTime.parse(start, DateTimeFormatter.ofPattern("HH:mm"));
+            LocalTime e = LocalTime.parse(end, DateTimeFormatter.ofPattern("HH:mm"));
+            if (!e.isAfter(s)) throw new IllegalArgumentException("结束时间必须晚于开始时间");
+            LocalDateTime.of(d, s);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("日期或时间格式无效");
+        }
     }
 }

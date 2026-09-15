@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface FinalExamService {
     List<FinalExam> findBySemesterId(Integer semesterId);
+    List<FinalExam> findBySemesterAndTeacher(Integer semesterId, Integer teacherId);
 
     PageResult<FinalExam> pageQuery(ExamQueryDTO queryDTO);
     List<FinalExam> batchInsert(List<FinalExam> list);

@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 全局异常处理器:
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(AuthException.class)
     @ResponseStatus(HttpStatus.OK)
@@ -36,23 +39,22 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public Result handleRuntime(RuntimeException e) {
-        String msg = e.getMessage();
-        if (msg == null) msg = e.getClass().getSimpleName();
-        // 带上 MyBatis 嵌套的 cause 摘要(最多 1 层),便于排查
-        Throwable cause = e.getCause();
-        if (cause != null && cause != e) {
-            String causeMsg = cause.getMessage();
-            if (causeMsg != null) {
-                msg = msg + "\n; " + causeMsg;
-            }
-        }
-        return Result.error("500", "服务器内部错误: " + msg);
+        log.error("Unhandled runtime exception type={}", e.getClass().getSimpleName(), e);
+        return Result.error("500", "服务器内部错误，请稍后重试");
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public Result handleValidation(IllegalArgumentException e) {
+        return Result.error("400", e.getMessage() == null ? "请求参数无效" : e.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public Result handleOther(Exception e) {
-        return Result.error("500", "服务器内部错误: " + e.getMessage());
+        log.error("Unhandled checked exception type={}", e.getClass().getSimpleName(), e);
+        return Result.error("500", "服务器内部错误，请稍后重试");
     }
 }

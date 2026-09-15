@@ -4,6 +4,7 @@ import com.sdjzuxg.collegemanagesystem.entity.MeetingRoom;
 import com.sdjzuxg.collegemanagesystem.entity.RoomApply;
 
 import java.util.List;
+import com.sdjzuxg.collegemanagesystem.common.auth.LoginUser;
 
 public interface RoomApplyService {
     List<RoomApply> findAll();
@@ -14,6 +15,7 @@ public interface RoomApplyService {
     List<MeetingRoom> findAvailableRooms(String date, String startTime, String endTime, String roomName);
     boolean isRoomOccupied(Integer roomId, String date, String startTime, String endTime);
     boolean save(RoomApply roomApply);
+    boolean saveForCurrentUser(RoomApply roomApply, LoginUser user);
     boolean audit(Integer applyId, Integer status, Integer auditorId);
     boolean update(RoomApply roomApply);
     boolean deleteById(Integer applyId);

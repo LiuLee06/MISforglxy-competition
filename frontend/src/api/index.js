@@ -296,7 +296,7 @@ export const workloadApi = {
 
 export default api
 export const agentApi = {
-  chat: (data) => api.post('/agent/chat', data),
+  chat: (data) => api.post('/agent/chat', data, { timeout: 90000 }),
   getConversations: () => api.get('/agent/conversations'),
   getMessages: (conversationId) => api.get('/agent/conversations/' + conversationId + '/messages'),
   deleteConversation: (conversationId) => api.delete('/agent/conversations/' + conversationId),

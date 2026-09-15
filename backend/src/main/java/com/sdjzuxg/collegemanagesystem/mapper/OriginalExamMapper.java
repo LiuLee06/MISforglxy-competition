@@ -11,6 +11,8 @@ import java.util.Map;
 @Mapper
 public interface OriginalExamMapper {
     List<OriginalExam> selectBySemesterId(Integer semesterId);
+    List<OriginalExam> selectBySemesterAndTeacher(@Param("semesterId") Integer semesterId,
+                                                   @Param("teacherId") Integer teacherId);
 
     // 批量导入插入
     int batchInsert(@Param("list") List<OriginalExam> list);

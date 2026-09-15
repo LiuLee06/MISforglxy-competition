@@ -24,6 +24,6 @@ public interface AiPendingActionMapper {
     @Update("UPDATE ai_pending_action SET status='FAILED' WHERE action_id=#{id} AND status='EXECUTING'")
     int markFailed(@Param("id") Long id);
 
-    @Delete("DELETE FROM ai_pending_action WHERE conversation_id=#{conversationId}")
-    int deleteByConversationId(@Param("conversationId") Long conversationId);
+    @Delete("DELETE FROM ai_pending_action WHERE conversation_id=#{conversationId} AND status IN ('PENDING','EXECUTING')")
+    int deleteUnfinishedByConversationId(@Param("conversationId") Long conversationId);
 }

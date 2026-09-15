@@ -39,7 +39,7 @@ public class AgentToolConfiguration {
     @Bean
     public AgentTool getCurrentUserTool() {
         return new BuiltinAgentTool("get_current_user","获取当前登录用户的基本信息",ToolRiskLevel.READ,
-                AgentToolRegistry.schema(Map.of(),List.of()),"查询当前用户",false, a -> {
+                AgentToolRegistry.schema(Map.of(),List.of()),"查询当前用户",null,null,false, a -> {
             var u=CurrentUserUtil.get(); if(u==null) return AgentToolResult.fail("未登录");
             Teacher t=teacherService.findById(u.getUserId());
             Map<String,Object> out=new LinkedHashMap<>();
@@ -53,7 +53,7 @@ public class AgentToolConfiguration {
     public AgentTool searchTeachersTool() {
         return new BuiltinAgentTool("search_teachers","按姓名关键词或部门查询教师，最多返回30条",ToolRiskLevel.READ,
                 AgentToolRegistry.schema(Map.of("keyword",AgentToolRegistry.property("string","姓名关键词"),
-                        "department",AgentToolRegistry.property("string","部门")) ,List.of()),"查询教师",false,a -> {
+                        "department",AgentToolRegistry.property("string","部门")) ,List.of()),"查询教师","/teacher-info",null,false,a -> {
             String keyword=AgentToolSupport.string(a,"keyword"), dept=AgentToolSupport.string(a,"department");
             List<Teacher> all=teacherService.findAll();
             List<Map<String,Object>> rows=all.stream().filter(t -> (keyword.isBlank() || safe(t.getName()).contains(keyword))
@@ -69,11 +69,11 @@ public class AgentToolConfiguration {
     @Bean
     public AgentTool queryMyWorkloadTool() {
         return new BuiltinAgentTool("query_my_workload","查询当前登录教师本人的教学工作量",ToolRiskLevel.READ,
-                AgentToolRegistry.schema(Map.of("semesterId",AgentToolRegistry.property("integer","学期ID，可选")),List.of()),"查询我的工作量",false,a -> {
+                AgentToolRegistry.schema(Map.of("semesterId",AgentToolRegistry.property("integer","学期ID，可选")),List.of()),"查询我的工作量","/teacher-workload",null,false,a -> {
             var u=CurrentUserUtil.get(); if(u==null) return AgentToolResult.fail("未登录");
             Teacher t=teacherService.findById(u.getUserId()); if(t==null) return AgentToolResult.fail("当前用户不是教师");
             Integer semesterId=AgentToolSupport.integer(a,"semesterId");
-            List<Workload> list=workloadService.findMyRelated(t.getName(),null,null,semesterId);
+            List<Workload> list=workloadService.findMyRelatedByTeacherNo(t.getStaffNo(),null,null,semesterId);
             List<Map<String,Object>> rows=list.stream().limit(100).map(w -> {
                 Map<String,Object> m=new LinkedHashMap<>(); m.put("semester",w.getSemesterName()); m.put("courseName",w.getCourseName());
                 m.put("plannedHours",w.getTotalHours()); m.put("actualHours",w.getActualHours()); m.put("confirmStatus",w.getConfirmStatus()); return m;
@@ -86,7 +86,7 @@ public class AgentToolConfiguration {
     @Bean
     public AgentTool queryWorkloadCompletionTool() {
         return new BuiltinAgentTool("query_workload_completion","查询学院工作量确认完成情况",ToolRiskLevel.READ,
-                AgentToolRegistry.schema(Map.of("semesterId",AgentToolRegistry.property("integer","学期ID，可选")),List.of()),"查询工作量完成情况",true,a -> {
+                AgentToolRegistry.schema(Map.of("semesterId",AgentToolRegistry.property("integer","学期ID，可选")),List.of()),"查询工作量完成情况","/workload",null,false,a -> {
             Integer sid=AgentToolSupport.integer(a,"semesterId"); if(sid==null && semesterService.findCurrent()!=null) sid=semesterService.findCurrent().getSemesterId();
             return AgentToolResult.ok(workloadService.findCompletion(sid));
         });
@@ -98,18 +98,22 @@ public class AgentToolConfiguration {
                 AgentToolRegistry.schema(Map.of("date",AgentToolRegistry.property("string","日期 yyyy-MM-dd"),
                         "startTime",AgentToolRegistry.property("string","开始时间 HH:mm"),
                         "endTime",AgentToolRegistry.property("string","结束时间 HH:mm"),
-                        "minCapacity",AgentToolRegistry.property("integer","最小容量，可选")),List.of("date","startTime","endTime")),"查询会议室",false,a -> {
+                        "minCapacity",AgentToolRegistry.property("integer","最小容量，可选")),List.of("date","startTime","endTime")),"查询会议室","/meeting-reserve",null,false,a -> {
             String date=AgentToolSupport.requiredString(a,"date"), start=AgentToolSupport.requiredString(a,"startTime"), end=AgentToolSupport.requiredString(a,"endTime");
             int min=Optional.ofNullable(AgentToolSupport.integer(a,"minCapacity")).orElse(0);
+            if(min<0) return AgentToolResult.fail("最小容量不能为负数");
+            AgentToolSupport.validateDateTimeRange(date,start,end);
             List<MeetingRoom> rooms=roomApplyService.findAvailableRooms(date,start,end,null).stream().filter(r -> Optional.ofNullable(r.getCapacity()).orElse(0)>=min).toList();
-            return AgentToolResult.ok(rooms.stream().map(r -> Map.of("roomId",r.getRoomId(),"roomName",r.getRoomName(),"capacity",r.getCapacity(),"roomStatus",r.getRoomStatus())).toList());
+            return AgentToolResult.ok(rooms.stream().map(r -> {
+                Map<String,Object> row=new LinkedHashMap<>(); row.put("roomId",r.getRoomId()); row.put("roomName",r.getRoomName()); row.put("capacity",r.getCapacity()); row.put("roomStatus",r.getRoomStatus()); return row;
+            }).toList());
         });
     }
 
     @Bean
     public AgentTool queryMyRoomApplicationsTool() {
         return new BuiltinAgentTool("query_my_room_applications","查询当前用户的会议室申请",ToolRiskLevel.READ,
-                AgentToolRegistry.schema(Map.of("status",AgentToolRegistry.property("integer","状态：0待审核、1通过、2驳回")),List.of()),"查询我的会议室申请",false,a -> {
+                AgentToolRegistry.schema(Map.of("status",AgentToolRegistry.property("integer","状态：0待审核、1通过、2驳回")),List.of()),"查询我的会议室申请","/meeting-reserve",null,false,a -> {
             var u=CurrentUserUtil.get(); if(u==null)return AgentToolResult.fail("未登录");
             List<RoomApply> list=u.isAdmin()?roomApplyService.findAll():roomApplyService.findByTeacherId(u.getUserId());
             Integer status=AgentToolSupport.integer(a,"status");
@@ -123,17 +127,17 @@ public class AgentToolConfiguration {
     @Bean
     public AgentTool queryMyExamAssignmentsTool() {
         return new BuiltinAgentTool("query_my_exam_assignments","查询当前登录教师的监考安排",ToolRiskLevel.READ,
-                AgentToolRegistry.schema(Map.of("semesterId",AgentToolRegistry.property("integer","学期ID，可选")),List.of()),"查询我的监考安排",false,a -> {
+                AgentToolRegistry.schema(Map.of("semesterId",AgentToolRegistry.property("integer","学期ID，可选")),List.of()),"查询我的监考安排","/exam-supervise",null,false,a -> {
             var u=CurrentUserUtil.get(); if(u==null)return AgentToolResult.fail("未登录");
             Teacher t=teacherService.findById(u.getUserId()); if(t==null)return AgentToolResult.fail("当前用户不是教师");
             Integer sid=AgentToolSupport.integer(a,"semesterId"); if(sid==null&&semesterService.findCurrent()!=null)sid=semesterService.findCurrent().getSemesterId();
             List<Map<String,Object>> out=new ArrayList<>();
             if(sid!=null) {
-                for(OriginalExam e:originalExamService.findBySemesterId(sid)) if(safe(e.getTeacherName()).contains(safe(t.getName()))) {
-                    out.add(Map.of("type","original","courseName",e.getCourseName(),"startTime",e.getStartTime(),"endTime",e.getEndTime(),"room",e.getRoom(),"role",e.getInvigilateRole()));
+                for(OriginalExam e:originalExamService.findBySemesterAndTeacher(sid,u.getUserId())) {
+                    Map<String,Object> row=new LinkedHashMap<>(); row.put("type","original"); row.put("courseName",e.getCourseName()); row.put("startTime",e.getStartTime()); row.put("endTime",e.getEndTime()); row.put("room",e.getRoom()); row.put("role",e.getInvigilateRole()); out.add(row);
                 }
-                for(FinalExam e:finalExamService.findBySemesterId(sid)) if(e.getTeachers()!=null&&e.getTeachers().stream().anyMatch(x->u.getUserId().equals(x.getTeacherId()))) {
-                    out.add(Map.of("type","final","courseName",e.getCourseName(),"startTime",e.getStartTime(),"endTime",e.getEndTime(),"room",e.getRoom()));
+                for(FinalExam e:finalExamService.findBySemesterAndTeacher(sid,u.getUserId())) {
+                    Map<String,Object> row=new LinkedHashMap<>(); row.put("type","final"); row.put("courseName",e.getCourseName()); row.put("startTime",e.getStartTime()); row.put("endTime",e.getEndTime()); row.put("room",e.getRoom()); out.add(row);
                 }
             }
             return AgentToolResult.ok(Map.of("count",out.size(),"assignments",out));
@@ -143,7 +147,7 @@ public class AgentToolConfiguration {
     @Bean
     public AgentTool queryNoticeReadStatsTool() {
         return new BuiltinAgentTool("query_notice_read_stats","查询当前用户发布通知的未读接收人，无需提供通知ID，可按标题关键词筛选",ToolRiskLevel.READ,
-                AgentToolRegistry.schema(Map.of("titleKeyword",AgentToolRegistry.property("string","通知标题关键词，可选；不填写则查询全部通知")),List.of()),"查询通知未读人员",false,a -> {
+                AgentToolRegistry.schema(Map.of("titleKeyword",AgentToolRegistry.property("string","通知标题关键词，可选；不填写则查询全部通知")),List.of()),"查询通知未读人员","/notice-maintain",null,false,a -> {
             var u=CurrentUserUtil.get();
             if(u==null)return AgentToolResult.fail("未登录");
             String titleKeyword=AgentToolSupport.string(a,"titleKeyword");
@@ -152,6 +156,7 @@ public class AgentToolConfiguration {
             int matchedNoticeCount=0;
             int noticesWithUnread=0;
             for(Notice notice:notices) {
+                if(records.size()>=500) break;
                 if(!titleKeyword.isBlank()&&!safe(notice.getTitle()).contains(titleKeyword))continue;
                 matchedNoticeCount++;
                 if(notice.getNoticeId()==null)continue;
@@ -172,6 +177,7 @@ public class AgentToolConfiguration {
             out.put("matchedNoticeCount",matchedNoticeCount);
             out.put("noticesWithUnread",noticesWithUnread);
             out.put("totalUnreadPeople",records.size());
+            out.put("truncated", records.size() >= 500);
             out.put("records",records);
             return AgentToolResult.ok(out);
         });
@@ -182,18 +188,18 @@ public class AgentToolConfiguration {
         return new BuiltinAgentTool("create_room_application","提交会议室预约申请，执行前必须经过用户确认",ToolRiskLevel.WRITE_CONFIRM,
                 AgentToolRegistry.schema(Map.of("roomId",AgentToolRegistry.property("integer","会议室ID"),
                         "date",AgentToolRegistry.property("string","日期 yyyy-MM-dd"),"startTime",AgentToolRegistry.property("string","开始时间 HH:mm"),
-                        "endTime",AgentToolRegistry.property("string","结束时间 HH:mm"),"purpose",AgentToolRegistry.property("string","预约用途")),List.of("roomId","date","startTime","endTime","purpose")),"提交会议室预约",false,a -> {
+                        "endTime",AgentToolRegistry.property("string","结束时间 HH:mm"),"purpose",AgentToolRegistry.property("string","预约用途")),List.of("roomId","date","startTime","endTime","purpose")),"提交会议室预约","/meeting-reserve",null,false,a -> {
             try {
                 var u=CurrentUserUtil.get(); if(u==null)return AgentToolResult.fail("未登录");
                 Integer roomId=AgentToolSupport.requiredInteger(a,"roomId"); String date=AgentToolSupport.requiredString(a,"date");
                 String start=AgentToolSupport.requiredString(a,"startTime"), end=AgentToolSupport.requiredString(a,"endTime");
+                AgentToolSupport.validateDateTimeRange(date,start,end);
                 MeetingRoom room=meetingRoomService.findById(roomId); if(room==null)return AgentToolResult.fail("会议室不存在");
-                if(roomApplyService.isRoomOccupied(roomId,date,start,end))return AgentToolResult.fail("会议室当前时段已被占用");
                 SimpleDateFormat f=new SimpleDateFormat("yyyy-MM-dd HH:mm"); f.setLenient(false);
                 RoomApply apply=new RoomApply(); apply.setRoom(room); apply.setStartTime(f.parse(date+" "+start)); apply.setEndTime(f.parse(date+" "+end)); apply.setPurpose(AgentToolSupport.requiredString(a,"purpose"));
-                if(!u.isAdmin()){Teacher t=new Teacher();t.setTeacherId(u.getUserId());apply.setTeacher(t);} else apply.setApplicantName("ADMIN");
-                if(!roomApplyService.save(apply))return AgentToolResult.fail("预约申请提交失败");
-                return AgentToolResult.ok(Map.of("submitted",true,"applyId",apply.getApplyId(),"status","待审核","roomName",room.getRoomName()));
+                if(!roomApplyService.saveForCurrentUser(apply,u))return AgentToolResult.fail("预约申请提交失败");
+                Map<String,Object> submitted=new LinkedHashMap<>(); submitted.put("submitted",true); submitted.put("applyId",apply.getApplyId()); submitted.put("status","待审核"); submitted.put("roomName",room.getRoomName());
+                return AgentToolResult.ok(submitted);
             } catch(Exception e){return AgentToolResult.fail("预约参数无效或业务校验失败");}
         });
     }
@@ -203,22 +209,23 @@ public class AgentToolConfiguration {
         return new BuiltinAgentTool("publish_notice","发布通知，执行前必须经过用户确认",ToolRiskLevel.WRITE_CONFIRM,
                 AgentToolRegistry.schema(Map.of("title",AgentToolRegistry.property("string","通知标题"),
                         "content",AgentToolRegistry.property("string","通知内容"),"receiverIds",Map.of("type","array","items",Map.of("type","integer")),
-                        "noticeType",AgentToolRegistry.property("string","通知类型")),List.of("title","content","receiverIds")),"发布通知",true,a -> {
-            var u=CurrentUserUtil.get(); if(u==null||!u.isAdmin())return AgentToolResult.fail("当前账号没有发布通知权限");
+                        "noticeType",AgentToolRegistry.property("string","通知类型")),List.of("title","content","receiverIds")),"发布通知","/notice-publish",null,false,a -> {
+            var u=CurrentUserUtil.get(); if(u==null)return AgentToolResult.fail("未登录");
             String title=AgentToolSupport.requiredString(a,"title"), content=AgentToolSupport.requiredString(a,"content");
-            List<Integer> ids=AgentToolSupport.integerList(a,"receiverIds"); if(ids.size()>500)return AgentToolResult.fail("接收人数量不能超过500");
+            if(title.length()>200)return AgentToolResult.fail("通知标题不能超过200字");
+            if(content.length()>10000)return AgentToolResult.fail("通知内容不能超过10000字");
+            List<Integer> ids=AgentToolSupport.integerList(a,"receiverIds"); if(ids.isEmpty())return AgentToolResult.fail("请选择接收对象"); if(ids.size()>500)return AgentToolResult.fail("接收人数量不能超过500");
             Notice n=new Notice(); n.setTitle(title);n.setContent(content);n.setNoticeType(AgentToolSupport.string(a,"noticeType"));
-            n.setPublisherId(u.getUserId());n.setPublisherType(u.getUserType());n.setPublishTime(new Date());n.setStatus("published");
-            n.setPublishDept("院办"); n.setAttachments("[]");
-            Teacher t=teacherService.findById(u.getUserId()); if(t!=null)n.setPublisherName(t.getName());
-            return noticeService.saveWithReceivers(n,ids)?AgentToolResult.ok(Map.of("published",true,"noticeId",n.getNoticeId(),"status","已发布")):AgentToolResult.fail("通知发布失败");
+            if(!noticeService.publishForCurrentUser(n,ids,u))return AgentToolResult.fail("通知发布失败");
+            Map<String,Object> published=new LinkedHashMap<>(); published.put("published",true); published.put("noticeId",n.getNoticeId()); published.put("status","已发布");
+            return AgentToolResult.ok(published);
         });
     }
 
     @Bean
     public AgentTool remindNoticeTool() {
         return new BuiltinAgentTool("remind_notice","按通知标题提醒未读接收人，执行前必须经过用户确认，不需要通知ID",ToolRiskLevel.WRITE_CONFIRM,
-                AgentToolRegistry.schema(Map.of("noticeTitle",AgentToolRegistry.property("string","通知标题或标题关键词")),List.of("noticeTitle")),"提醒通知未读人员",false,a -> {
+                AgentToolRegistry.schema(Map.of("noticeTitle",AgentToolRegistry.property("string","通知标题或标题关键词")),List.of("noticeTitle")),"提醒通知未读人员","/notice-maintain",null,false,a -> {
             var u=CurrentUserUtil.get();
             if(u==null)return AgentToolResult.fail("未登录");
             String title=AgentToolSupport.string(a,"noticeTitle");

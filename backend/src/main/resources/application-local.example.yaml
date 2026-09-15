@@ -4,16 +4,19 @@
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/你的数据库名?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&useServerPrepStmts=true
-    username: glxyxg
-    password: glxy
+    url: jdbc:mysql://localhost:3306/YOUR_DATABASE_NAME?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&useServerPrepStmts=true
+    username: YOUR_DB_USERNAME
+    password: YOUR_DB_PASSWORD
 
 ai:
   provider: mock
   agent:
     enabled: true
-  # 如果使用 DeepSeek，请改为 deepseek，并填写 API Key
-  # provider: deepseek
-  # deepseek:
-  #   api-key: 你的DeepSeek_API_Key
-  #   model: deepseek-v4-flash
+  time-zone: Asia/Shanghai
+  # 如果使用 DeepSeek，请通过环境变量或本地配置覆盖以下值。
+  deepseek:
+    base-url: https://api.deepseek.com
+    api-key: YOUR_DEEPSEEK_API_KEY
+    model: YOUR_DEEPSEEK_MODEL
+    thinking-enabled: false
+    timeout-seconds: 60

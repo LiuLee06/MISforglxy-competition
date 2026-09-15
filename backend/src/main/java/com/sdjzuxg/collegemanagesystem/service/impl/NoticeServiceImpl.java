@@ -9,6 +9,7 @@ import com.sdjzuxg.collegemanagesystem.mapper.NoticeMapper;
 import com.sdjzuxg.collegemanagesystem.mapper.NoticeReceiveMapper;
 import com.sdjzuxg.collegemanagesystem.mapper.TeacherMapper;
 import com.sdjzuxg.collegemanagesystem.service.NoticeService;
+import com.sdjzuxg.collegemanagesystem.common.auth.LoginUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -86,6 +87,33 @@ public class NoticeServiceImpl implements NoticeService {
         }
 
         return true;
+    }
+
+    @Override
+    @Transactional
+    public boolean publishForCurrentUser(Notice notice, List<Integer> receiverIds, LoginUser user) {
+        if (user == null) throw new IllegalArgumentException("未登录");
+        if (notice == null || notice.getTitle() == null || notice.getTitle().trim().isEmpty())
+            throw new IllegalArgumentException("通知标题不能为空");
+        if (notice.getTitle().trim().length() > 200) throw new IllegalArgumentException("通知标题不能超过200字");
+        if (notice.getContent() == null || notice.getContent().trim().isEmpty())
+            throw new IllegalArgumentException("通知内容不能为空");
+        if (notice.getContent().length() > 10000) throw new IllegalArgumentException("通知内容不能超过10000字");
+        if (receiverIds == null || receiverIds.isEmpty()) throw new IllegalArgumentException("请选择接收对象");
+        List<Integer> ids = receiverIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+        if (ids.isEmpty() || ids.size() > 500) throw new IllegalArgumentException("接收人数量必须为1至500人");
+        long validCount = teacherMapper.selectAll().stream().filter(t -> t.getTeacherId() != null && ids.contains(t.getTeacherId())).count();
+        if (validCount != ids.size()) throw new IllegalArgumentException("接收人列表包含不存在的教师");
+
+        Teacher publisher = user.isAdmin() ? null : teacherMapper.selectById(user.getUserId());
+        notice.setPublisherId(user.getUserId());
+        notice.setPublisherType(user.isAdmin() ? "admin" : "teacher");
+        notice.setPublisherName(user.isAdmin() ? "admin" : publisher == null ? "teacher" : publisher.getName());
+        notice.setPublishDept(user.isAdmin() ? "系统" : publisher == null ? "" : publisher.getDept());
+        notice.setStatus("published");
+        notice.setPublishTime(new Date());
+        if (notice.getAttachments() == null) notice.setAttachments("[]");
+        return saveWithReceivers(notice, ids);
     }
 
     /**

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class AgentToolRegistryTest {
     private AgentTool tool(String name, boolean adminOnly) {
@@ -28,5 +29,20 @@ class AgentToolRegistryTest {
         assertNull(registry.get("not_registered"));
         assertEquals(List.of("read_tool"), registry.getAvailable(teacher).stream().map(AgentTool::getName).toList());
         assertEquals(2, registry.getAvailable(admin).size());
+    }
+
+    @Test
+    void toolMustDeclareAndPassItsMenuPermission() {
+        var menus = mock(RoleMenuMapper.class);
+        var actions = mock(RoleMenuActionMapper.class);
+        when(menus.existsByTeacherIdAndMenuUrl(7, "/notice-publish")).thenReturn(1);
+        AgentTool notice = new BuiltinAgentTool("publish_notice", "", ToolRiskLevel.WRITE_CONFIRM,
+                AgentToolRegistry.schema(Map.of(), List.of()), "发布通知", "/notice-publish", null, false,
+                args -> AgentToolResult.ok(Map.of()));
+        AgentToolRegistry registry = new AgentToolRegistry(List.of(notice), new AgentCapabilityService(menus, actions));
+        assertEquals("/notice-publish", notice.definition().getRequiredMenu());
+        assertEquals(List.of(notice), registry.getAvailable(new LoginUser(7, "teacher", List.of())));
+        when(menus.existsByTeacherIdAndMenuUrl(7, "/notice-publish")).thenReturn(0);
+        assertEquals(List.of(), registry.getAvailable(new LoginUser(7, "teacher", List.of())));
     }
 }

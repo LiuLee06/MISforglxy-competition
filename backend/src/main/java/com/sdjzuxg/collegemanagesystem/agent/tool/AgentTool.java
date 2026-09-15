@@ -8,7 +8,7 @@ public interface AgentTool {
     ToolRiskLevel getRiskLevel();
     Map<String,Object> getParametersSchema();
     default String getDisplayName() { return getName(); }
-    default String getRequiredMenu() { return switch (getName()) { case "search_teachers" -> "/teacher-info"; case "query_my_workload" -> "/teacher-workload"; case "find_available_meeting_rooms", "query_my_room_applications", "create_room_application" -> "/meeting-reserve"; case "query_my_exam_assignments" -> "/exam-supervise"; case "query_notice_read_stats", "remind_notice" -> "/notice-maintain"; default -> null; }; }
+    default String getRequiredMenu() { return null; }
     default String getRequiredPermission() { return null; }
     default boolean isAdminOnly() { return false; }
     AgentToolResult execute(Map<String,Object> arguments);

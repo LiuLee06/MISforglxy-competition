@@ -35,7 +35,8 @@ public class AgentController {
     public Result confirm(@PathVariable Long actionId){
         AgentActionService.ActionExecutionResult r=orchestrator.confirm(actionId);
         if(!r.success() && "FORBIDDEN".equals(r.status()))return Result.error("403",r.message());
-        return Result.success(Map.of("status",r.status(),"success",r.success(),"message",r.message()));
+        Map<String,Object> body=new java.util.LinkedHashMap<>(); body.put("status",r.status()); body.put("success",r.success()); body.put("message",r.message());
+        return Result.success(body);
     }
 
     @PostMapping("/actions/{actionId}/cancel")

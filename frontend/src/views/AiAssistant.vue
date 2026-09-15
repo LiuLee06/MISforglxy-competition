@@ -29,6 +29,11 @@
                 <div v-if="item.role === 'assistant'" class="message-bubble markdown-body" v-html="renderMarkdown(item.content || '已完成处理。')"></div>
                 <div v-else class="message-bubble">{{ item.content }}</div>
                 <div v-if="item.toolName" class="stored-tool">{{ item.toolName }}</div>
+                <div v-if="item.toolTrace?.length" class="tool-trace">
+                  <span v-for="step in item.toolTrace" :key="step.tool + step.status" :class="['trace-step', step.status]">
+                    {{ traceIcon(step.status) }} {{ step.displayName || step.tool }}
+                  </span>
+                </div>
               </div>
             </article>
             <article v-if="loading" class="message-row assistant-row"><div class="avatar">AI</div><div class="message-bubble typing">正在查询学院业务…</div></article>
@@ -137,16 +142,31 @@ const sendMessage = async () => {
     const res = await agentApi.chat({ conversationId: conversationId.value, message: text })
     if (res.code !== '200' || !res.data) { ElMessage.error(res.msg || 'AI 请求失败'); return }
     const data = res.data; conversationId.value = data.conversationId
-    if (data.message) messages.value.push({ role: 'assistant', content: data.message, localId: 'assistant-' + Date.now() })
+    if (data.message) messages.value.push({ role: 'assistant', content: data.message, toolTrace: data.toolTrace || [], localId: 'assistant-' + Date.now() })
     if (data.status === 'need_confirmation' && data.pendingAction) { pendingAction.value = data.pendingAction; confirmVisible.value = true }
     await loadConversations(); scrollToBottom()
   } catch (e) { ElMessage.error('AI 服务暂时不可用，请稍后重试') } finally { loading.value = false }
 }
 const confirmPending = async () => {
   if (!pendingAction.value) return; confirming.value = true
-  try { const res = await agentApi.confirmAction(pendingAction.value.actionId); if (res.code === '200') { const message = res.data?.message || '操作已完成。'; messages.value.push({ role: 'assistant', content: message, localId: 'confirm-' + Date.now() }); ElMessage.success(message); confirmVisible.value = false; pendingAction.value = null } else ElMessage.error(res.msg || '操作未完成') } catch (e) { ElMessage.error('确认操作失败') } finally { confirming.value = false }
+  try {
+    const res = await agentApi.confirmAction(pendingAction.value.actionId)
+    const result = res.data
+    if (res.code === '200' && result?.success === true && result.status === 'EXECUTED') {
+      ElMessage.success(result.message || '操作已完成。')
+      confirmVisible.value = false; pendingAction.value = null
+      if (conversationId.value) await loadConversation(conversationId.value)
+    } else {
+      ElMessage.error(result?.message || res.msg || '操作未完成')
+      if (result?.status === 'EXPIRED' || result?.status === 'REJECTED' || result?.status === 'FAILED') {
+        confirmVisible.value = false; pendingAction.value = null
+        if (conversationId.value) await loadConversation(conversationId.value)
+      }
+    }
+  } catch (e) { ElMessage.error('确认操作失败') } finally { confirming.value = false }
 }
-const cancelPending = async () => { if (!pendingAction.value) return; try { const res = await agentApi.cancelAction(pendingAction.value.actionId); if (res.code === '200') ElMessage.info('操作已取消'); else ElMessage.error(res.msg || '取消失败') } finally { confirmVisible.value = false; pendingAction.value = null } }
+const cancelPending = async () => { if (!pendingAction.value) return; try { const res = await agentApi.cancelAction(pendingAction.value.actionId); if (res.code === '200' && res.data?.status === 'CANCELLED') { ElMessage.info('操作已取消'); if (conversationId.value) await loadConversation(conversationId.value) } else ElMessage.error(res.msg || '取消失败') } finally { confirmVisible.value = false; pendingAction.value = null } }
+const traceIcon = (status) => ({ success: '✓', failed: '✕', pending_confirmation: '○' }[status] || '·')
 const scrollToBottom = () => nextTick(() => { if (messageList.value) messageList.value.scrollTop = messageList.value.scrollHeight })
 onMounted(loadConversations)
 </script>
@@ -155,6 +175,11 @@ onMounted(loadConversations)
 .markdown-body ul,.markdown-body ol{padding-left:0;list-style:none}
 .markdown-body li{position:relative;padding-left:22px}
 .markdown-body ul>li::before{content:'•';position:absolute;left:2px;top:0;color:#6d86a0;font-size:1.2em;line-height:1.4}
+.markdown-body table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+.markdown-body th,.markdown-body td{border:1px solid #dbe5ef;padding:8px 10px;text-align:left}
+.markdown-body th{background:#f5f8fb;color:#34495e;font-weight:600}
+.tool-trace{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px;color:#7890a5;font-size:12px}
+.trace-step.success{color:#4d9b77}.trace-step.failed{color:#d66b6b}.trace-step.pending_confirmation{color:#c08b45}
 .markdown-body ol{counter-reset:markdown-item}
 .markdown-body ol>li{counter-increment:markdown-item}
 .markdown-body ol>li::before{content:counter(markdown-item) '.';position:absolute;left:0;top:0;color:#6d86a0;font-weight:600}

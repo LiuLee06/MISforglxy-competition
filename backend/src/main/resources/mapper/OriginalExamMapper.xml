@@ -9,6 +9,16 @@
         WHERE oe.semester_id = #{semesterId}
     </select>
 
+    <select id="selectBySemesterAndTeacher" resultMap="FlatResultMap">
+        SELECT oe.*, oet.original_exam_teacher_id AS oet_id,
+               t.name AS teacher_name, oet.invigilate_role
+        FROM ORIGINAL_EXAM oe
+        INNER JOIN ORIGINAL_EXAM_TEACHER oet ON oe.exam_id = oet.exam_id
+        INNER JOIN TEACHER t ON t.teacher_id = oet.teacher_id
+        WHERE oe.semester_id = #{semesterId} AND oet.teacher_id = #{teacherId}
+        ORDER BY oe.start_time, oe.exam_id
+    </select>
+
     <insert id="batchInsert" useGeneratedKeys="true" keyProperty="examId">
         INSERT INTO ORIGINAL_EXAM (course_name, semester_id, start_time, end_time, room, status, reason, teaching_campus, exam_campus, teaching_dept, teaching_teacher, invigilation_college, class_name, student_count)
         VALUES

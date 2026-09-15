@@ -31,6 +31,12 @@ public class FinalExamServiceImpl implements FinalExamService {
     }
 
     @Override
+    public List<FinalExam> findBySemesterAndTeacher(Integer semesterId, Integer teacherId) {
+        if (semesterId == null || teacherId == null) return List.of();
+        return finalExamMapper.selectBySemesterAndTeacher(semesterId, teacherId);
+    }
+
+    @Override
     public PageResult<FinalExam> pageQuery(ExamQueryDTO queryDTO) {
         long total = finalExamMapper.countByCondition(queryDTO);
         List<FinalExam> records = finalExamMapper.selectByCondition(queryDTO);

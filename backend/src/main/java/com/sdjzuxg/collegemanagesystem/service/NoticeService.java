@@ -4,6 +4,7 @@ import com.sdjzuxg.collegemanagesystem.entity.Notice;
 import com.sdjzuxg.collegemanagesystem.entity.RoomApply;
 
 import java.util.List;
+import com.sdjzuxg.collegemanagesystem.common.auth.LoginUser;
 
 public interface NoticeService {
     List<Notice> findAll();
@@ -12,6 +13,7 @@ public interface NoticeService {
     List<Notice> findByPublisherId(Integer publisherId, String publisherType);
     boolean save(Notice notice);
     boolean saveWithReceivers(Notice notice, List<Integer> receiverIds);
+    boolean publishForCurrentUser(Notice notice, List<Integer> receiverIds, LoginUser user);
     boolean editPublish(Integer oldNoticeId, Notice notice, List<Integer> receiverIds);
     boolean update(Notice notice);
     boolean deleteById(Integer noticeId);

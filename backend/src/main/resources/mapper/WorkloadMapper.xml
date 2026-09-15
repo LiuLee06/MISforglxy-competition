@@ -52,6 +52,30 @@
         ORDER BY w.wl_id DESC
     </select>
 
+    <select id="selectMyRelatedByTeacherNo" resultMap="WorkloadResultMap">
+        <include refid="BaseSelect"/>
+        <where>
+            (
+                w.teacher_no = #{currentTeacherNo}
+                OR (
+                    w.notification_no IS NOT NULL
+                    AND TRIM(w.notification_no) != ''
+                    AND EXISTS (
+                        SELECT 1 FROM WORKLOAD own
+                        WHERE own.teacher_no = #{currentTeacherNo}
+                          AND own.semester_id = w.semester_id
+                          AND own.notification_no = w.notification_no
+                          AND own.course_no = w.course_no
+                    )
+                )
+            )
+            <if test="semesterId != null">AND w.semester_id = #{semesterId}</if>
+            <if test="courseName != null">AND w.course_name LIKE CONCAT('%', #{courseName}, '%')</if>
+            <if test="teacherNo != null">AND w.teacher_no = #{teacherNo}</if>
+        </where>
+        ORDER BY w.semester_id, w.notification_no, w.course_no, w.teacher_no, w.hour_type, w.wl_id
+    </select>
+
     <!-- 前端无页面调用，暂不启用（与 Controller/Service/Mapper 接口同步注释） -->
     <!--
     <select id="selectDepartmentWorkloads" resultMap="WorkloadResultMap">

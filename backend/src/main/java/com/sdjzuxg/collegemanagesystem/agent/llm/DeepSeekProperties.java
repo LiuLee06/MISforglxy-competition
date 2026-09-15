@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "ai.deepseek")
 public class DeepSeekProperties {
-    private String baseUrl = "https://api.deepseek.com";
+    private String baseUrl = "";
     private String apiKey = "";
-    private String model = "deepseek-v4-flash";
+    private String model = "";
     private boolean thinkingEnabled;
     private int timeoutSeconds = 60;
 }

@@ -40,6 +40,7 @@ mybatis:
 
 ai:
   provider: ${AI_PROVIDER:mock}
+  time-zone: ${AI_TIME_ZONE:Asia/Shanghai}
   agent:
     enabled: ${AI_AGENT_ENABLED:true}
     max-history-messages: ${AI_MAX_HISTORY_MESSAGES:20}

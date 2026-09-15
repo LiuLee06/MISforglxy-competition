@@ -20,4 +20,6 @@ backend/.env
 frontend/.env
 .env
 *.key
+*.pem
 backend/backend-run.log
+backend/backend-run-error.log

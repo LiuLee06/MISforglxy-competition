@@ -38,6 +38,15 @@ public class WorkloadServiceImpl implements WorkloadService {
                 trimToNull(teacherName), semesterId);
     }
 
+    @Override
+    public List<Workload> findMyRelatedByTeacherNo(String currentTeacherNo, String courseName,
+                                                   String teacherNo, Integer semesterId) {
+        String currentNo = trimToNull(currentTeacherNo);
+        if (currentNo == null) return List.of();
+        return workloadMapper.selectMyRelatedByTeacherNo(currentNo, trimToNull(courseName),
+                trimToNull(teacherNo), semesterId);
+    }
+
     // 前端无页面调用，暂不启用（与 Service 接口、Controller、Mapper 同步注释）
     /*
     @Override
