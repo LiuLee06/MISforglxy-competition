@@ -21,9 +21,9 @@
 
 ## Clone 后快速运行
 
-1. 准备 MySQL，并执行 `backend/SQL/` 下的基础表、业务扩展和 AI 相关脚本；至少需要执行 `acad_inte_sys.sql`、`create_ai_agent.sql`、`add_room_apply_purpose.sql`，以及项目实际用到的业务扩展脚本。
+1. 准备云端 MySQL，并在云数据库中执行 `backend/SQL/` 下的基础表、业务扩展和 AI 相关脚本；至少需要执行 `acad_inte_sys.sql`、`create_ai_agent.sql`、`add_room_apply_purpose.sql`，以及项目实际用到的业务扩展脚本。确保云数据库已开放访问并加入当前客户端 IP 白名单。
 2. 复制 `backend/src/main/resources/application-local.example.yaml` 为 `backend/application-local.yaml`，只修改这个本地文件：
-   - `spring.datasource.url`：数据库地址和库名
+   - `spring.datasource.url`：云数据库地址、端口和库名
    - `spring.datasource.username/password`：数据库账号密码
    - `ai.provider`：使用 DeepSeek 填 `deepseek`
    - `ai.deepseek.api-key/model`：DeepSeek Key 和模型名称
