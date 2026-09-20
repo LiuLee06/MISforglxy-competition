@@ -20,3 +20,4 @@ ai:
     model: YOUR_DEEPSEEK_MODEL
     thinking-enabled: false
     timeout-seconds: 60
+    max-output-tokens: 1536

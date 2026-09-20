@@ -52,4 +52,10 @@ ai:
     model: ${DEEPSEEK_MODEL:deepseek-v4-flash}
     thinking-enabled: ${DEEPSEEK_THINKING_ENABLED:false}
     timeout-seconds: ${DEEPSEEK_TIMEOUT_SECONDS:60}
+    max-output-tokens: ${DEEPSEEK_MAX_OUTPUT_TOKENS:1536}
+  knowledge:
+    max-file-size-mb: ${AI_KNOWLEDGE_MAX_FILE_SIZE_MB:20}
+    processing:
+      chunk-chars: ${AI_KNOWLEDGE_CHUNK_CHARS:2000}
+      summary-chars: ${AI_KNOWLEDGE_SUMMARY_CHARS:8000}
 

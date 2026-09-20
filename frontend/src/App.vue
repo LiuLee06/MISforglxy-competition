@@ -73,7 +73,9 @@
             router
             @item-click="onMenuItemClick"
           >
-            <el-menu-item index="/ai-assistant">✨ AI 助手</el-menu-item>            <el-sub-menu v-if="showMenuGroup('teacher')" index="teacher">
+            <el-menu-item index="/ai-assistant">✨ AI 助手</el-menu-item>
+            <el-menu-item v-if="isAdmin" index="/ai-knowledge">📚 AI 知识库</el-menu-item>
+            <el-sub-menu v-if="showMenuGroup('teacher')" index="teacher">
               <template #title>
                 <el-icon><UserFilled /></el-icon>
                 <span>教师管理</span>

@@ -13,4 +13,8 @@
         SELECT content FROM FILE_STORE WHERE file_name = #{fileName}
     </select>
 
+    <delete id="deleteByName">
+        DELETE FROM FILE_STORE WHERE file_name = #{fileName}
+    </delete>
+
 </mapper>

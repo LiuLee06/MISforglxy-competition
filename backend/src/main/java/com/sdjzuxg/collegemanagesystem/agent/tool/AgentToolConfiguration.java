@@ -4,6 +4,9 @@ import com.sdjzuxg.collegemanagesystem.agent.util.AgentToolSupport;
 import com.sdjzuxg.collegemanagesystem.common.auth.CurrentUserUtil;
 import com.sdjzuxg.collegemanagesystem.entity.*;
 import com.sdjzuxg.collegemanagesystem.service.*;
+import com.sdjzuxg.collegemanagesystem.knowledge.entity.KnowledgeDocument;
+import com.sdjzuxg.collegemanagesystem.knowledge.service.KnowledgeDocumentService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import java.text.SimpleDateFormat;
@@ -23,17 +26,67 @@ public class AgentToolConfiguration {
     private final FinalExamService finalExamService;
     private final NoticeService noticeService;
     private final NoticeReceiveService noticeReceiveService;
+    private final KnowledgeDocumentService knowledgeDocumentService;
 
+    @Autowired
     public AgentToolConfiguration(TeacherService teacherService, WorkloadService workloadService,
             WorkloadResultService workloadResultService, RoomApplyService roomApplyService,
             MeetingRoomService meetingRoomService, SemesterService semesterService,
             OriginalExamService originalExamService, FinalExamService finalExamService,
-            NoticeService noticeService, NoticeReceiveService noticeReceiveService) {
+            NoticeService noticeService, NoticeReceiveService noticeReceiveService,
+            KnowledgeDocumentService knowledgeDocumentService) {
         this.teacherService=teacherService; this.workloadService=workloadService;
         this.workloadResultService=workloadResultService; this.roomApplyService=roomApplyService;
         this.meetingRoomService=meetingRoomService; this.semesterService=semesterService;
         this.originalExamService=originalExamService; this.finalExamService=finalExamService;
         this.noticeService=noticeService; this.noticeReceiveService=noticeReceiveService;
+        this.knowledgeDocumentService=knowledgeDocumentService;
+    }
+
+    /** 保留原有单元测试和少量手工调用使用的构造方式。 */
+    public AgentToolConfiguration(TeacherService teacherService, WorkloadService workloadService,
+            WorkloadResultService workloadResultService, RoomApplyService roomApplyService,
+            MeetingRoomService meetingRoomService, SemesterService semesterService,
+            OriginalExamService originalExamService, FinalExamService finalExamService,
+            NoticeService noticeService, NoticeReceiveService noticeReceiveService) {
+        this(teacherService, workloadService, workloadResultService, roomApplyService, meetingRoomService,
+                semesterService, originalExamService, finalExamService, noticeService, noticeReceiveService, null);
+    }
+
+    @Bean
+    public AgentTool searchKnowledgeCatalogTool() {
+        return new BuiltinAgentTool("search_knowledge_catalog", "按问题搜索学院文件知识库目录，返回可用文件的名称、简介和关键词", ToolRiskLevel.READ,
+                AgentToolRegistry.schema(Map.of("query", AgentToolRegistry.property("string", "教师的问题或需要查找的主题"),
+                        "limit", AgentToolRegistry.property("integer", "最多返回文件数，默认5，最大10")), List.of("query")),
+                "搜索学院文件", null, null, false, args -> {
+                    String query = AgentToolSupport.requiredString(args, "query");
+                    int limit = Optional.ofNullable(AgentToolSupport.integer(args, "limit")).orElse(5);
+                    List<KnowledgeDocument> documents = knowledgeDocumentService.searchCatalog(query, limit);
+                    List<Map<String, Object>> items = documents.stream().map(document -> {
+                        Map<String, Object> item = new LinkedHashMap<>();
+                        item.put("documentId", document.getDocumentId());
+                        item.put("fileName", document.getOriginalFileName());
+                        item.put("title", document.getTitle());
+                        item.put("summary", document.getSummary());
+                        item.put("keywords", document.getKeywords());
+                        item.put("documentType", document.getDocumentType());
+                        item.put("updatedAt", document.getUpdatedAt());
+                        return item;
+                    }).toList();
+                    return AgentToolResult.ok(Map.of("query", query, "count", items.size(), "documents", items));
+                });
+    }
+
+    @Bean
+    public AgentTool readKnowledgeDocumentTool() {
+        return new BuiltinAgentTool("read_knowledge_document", "读取指定学院文件的相关 Markdown 正文片段，回答文件问题必须使用此工具返回的正文", ToolRiskLevel.READ,
+                AgentToolRegistry.schema(Map.of("documentId", AgentToolRegistry.property("integer", "目录搜索返回的文件ID"),
+                        "query", AgentToolRegistry.property("string", "要查找的具体问题或章节关键词，可选")), List.of("documentId")),
+                "读取学院文件", null, null, false, args -> {
+                    Integer id = AgentToolSupport.requiredInteger(args, "documentId");
+                    String query = AgentToolSupport.string(args, "query");
+                    return AgentToolResult.ok(knowledgeDocumentService.readForAi(id.longValue(), query));
+                });
     }
 
     @Bean

@@ -303,3 +303,17 @@ export const agentApi = {
   confirmAction: (actionId) => api.post('/agent/actions/' + actionId + '/confirm'),
   cancelAction: (actionId) => api.post('/agent/actions/' + actionId + '/cancel')
 }
+
+export const knowledgeApi = {
+  list: () => api.get('/knowledge/documents'),
+  upload: (file) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post('/knowledge/documents/upload', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 30000
+    })
+  },
+  retry: (documentId) => api.post(`/knowledge/documents/${documentId}/retry`),
+  remove: (documentId) => api.delete(`/knowledge/documents/${documentId}`)
+}
