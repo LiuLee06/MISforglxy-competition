@@ -8,6 +8,11 @@ const routes = [
     component: () => import('../views/AiAssistant.vue')
   },
   {
+    path: '/ai-knowledge',
+    name: 'AiKnowledge',
+    component: () => import('../views/AiKnowledge.vue')
+  },
+  {
     path: '/',
     redirect: '/login'
   },

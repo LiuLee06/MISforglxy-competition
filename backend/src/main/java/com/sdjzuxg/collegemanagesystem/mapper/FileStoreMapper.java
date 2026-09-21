@@ -21,4 +21,6 @@ public interface FileStoreMapper {
      * 因此返回单行 Map,由调用方取出 content 字段(LONGBLOB 对应 byte[])
      */
     Map<String, Object> selectContentByName(@Param("fileName") String fileName);
+
+    int deleteByName(@Param("fileName") String fileName);
 }

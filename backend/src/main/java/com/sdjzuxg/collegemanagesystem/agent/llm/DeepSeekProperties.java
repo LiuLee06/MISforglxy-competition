@@ -13,4 +13,5 @@ public class DeepSeekProperties {
     private String model = "";
     private boolean thinkingEnabled;
     private int timeoutSeconds = 60;
+    private int maxOutputTokens = 4096;
 }

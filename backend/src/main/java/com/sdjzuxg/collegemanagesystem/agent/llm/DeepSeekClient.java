@@ -48,6 +48,7 @@ public class DeepSeekClient implements LlmClient {
             body.put("messages", messages.stream().map(this::toPayload).toList());
             body.put("tools", tools.stream().map(AgentToolDefinition::toFunctionTool).toList());
             body.put("tool_choice", "auto");
+            body.put("max_tokens", Math.max(256, properties.getMaxOutputTokens()));
             if (!properties.isThinkingEnabled()) {
                 body.put("thinking", Map.of("type", "disabled"));
             }
