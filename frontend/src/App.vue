@@ -134,6 +134,16 @@
               <el-menu-item v-if="canAccess('/notice-publish')" index="/notice-publish">发布公告</el-menu-item>
               <el-menu-item v-if="canAccess('/notice-maintain')" index="/notice-maintain">我的发布</el-menu-item>
             </el-sub-menu>
+
+            <el-sub-menu v-if="showMenuGroup('achievement')" index="achievement">
+              <template #title>
+                <el-icon><Trophy /></el-icon>
+                <span>成果管理</span>
+              </template>
+              <el-menu-item v-if="canAccess('/achievement-collect')" index="/achievement-collect">成果收集</el-menu-item>
+              <el-menu-item v-if="canAccess('/achievement-verify')" index="/achievement-verify">成果验证</el-menu-item>
+              <el-menu-item v-if="canAccess('/achievement-display')" index="/achievement-display">成果展示</el-menu-item>
+            </el-sub-menu>
           </el-menu>
         </el-aside>
 
@@ -156,6 +166,7 @@ import {
   Reading,
   Management,
   Bell,
+  Trophy,
   User,
   SwitchButton,
   Expand,
@@ -252,7 +263,8 @@ const menuGroups = {
   exam: ['/exam-arrange', '/exam-progress', '/exam-supervise'],
   teaching: ['/teaching-plan', '/teacher-teaching-plan', '/workload', '/teacher-workload', '/workload-result', '/teacher-workload-result'],
   org: ['/department-info', '/role-manage', '/role-assignment'],
-  notice: ['/notice-list', '/notice-publish', '/notice-maintain']
+  notice: ['/notice-list', '/notice-publish', '/notice-maintain'],
+  achievement: ['/achievement-collect', '/achievement-verify', '/achievement-display']
 }
 
 // 判断某个菜单分组是否应该显示（至少一个子菜单有权限）

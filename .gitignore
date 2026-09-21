@@ -9,13 +9,18 @@ frontend/dist/
 # Local environment and IDE files
 .env
 *.local
+.idea/
 .vscode/
 *.iml
+
+# WorkBuddy 工作目录（AI 助手本地记忆，非项目代码）
+.workbuddy/
 
 # OS files
 Thumbs.db
 Desktop.ini
 backend/application-local.yaml
+backend/src/main/resources/application-local.yaml
 backend/.env
 frontend/.env
 .env
@@ -23,3 +28,7 @@ frontend/.env
 *.pem
 backend/backend-run.log
 backend/backend-run-error.log
+
+# 上传附件（运行时数据，勿提交）
+/uploads/
+backend/uploads/

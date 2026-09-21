@@ -20,3 +20,11 @@ ai:
     model: YOUR_DEEPSEEK_MODEL
     thinking-enabled: false
     timeout-seconds: 60
+
+# 成果管理模块专用数据源（本地库 achievement_system）
+# 建库脚本见 backend/SQL/achievement_system.sql
+achievement:
+  datasource:
+    url: jdbc:mysql://YOUR_DB_HOST:3306/achievement_system?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&useServerPrepStmts=true
+    username: YOUR_DB_USERNAME
+    password: YOUR_DB_PASSWORD

@@ -127,6 +127,21 @@ const routes = [
     component: () => import('../views/NoticeMaintain.vue')
   },
   {
+    path: '/achievement-collect',
+    name: 'AchievementCollect',
+    component: () => import('../views/achievement/AchievementCollect.vue')
+  },
+  {
+    path: '/achievement-verify',
+    name: 'AchievementVerify',
+    component: () => import('../views/achievement/AchievementVerify.vue')
+  },
+  {
+    path: '/achievement-display',
+    name: 'AchievementDisplay',
+    component: () => import('../views/achievement/AchievementDisplay.vue')
+  },
+  {
     path: '/no-permission',
     name: 'NoPermission',
     component: () => import('../views/NoPermission.vue')
