@@ -27,7 +27,7 @@ import javax.sql.DataSource;
  *      ②原有 Mapper 依旧绑定主数据源，功能不受任何影响。
  */
 @Configuration
-@MapperScan(basePackages = {"com.sdjzuxg.collegemanagesystem.mapper", "com.sdjzuxg.collegemanagesystem.agent.mapper"},
+@MapperScan(basePackages = {"com.sdjzuxg.collegemanagesystem.mapper", "com.sdjzuxg.collegemanagesystem.agent.mapper", "com.sdjzuxg.collegemanagesystem.knowledge.mapper"},
         sqlSessionFactoryRef = "primarySqlSessionFactory")
 public class PrimaryMybatisConfig {
 

@@ -317,3 +317,18 @@ export const knowledgeApi = {
   retry: (documentId) => api.post(`/knowledge/documents/${documentId}/retry`),
   remove: (documentId) => api.delete(`/knowledge/documents/${documentId}`)
 }
+
+export const achievementApi = {
+  getOptions: () => api.get('/achievement/options'),
+  getList: (params) => api.get('/achievement', { params: params || {} }),
+  getStats: (params) => api.get('/achievement/stats', { params: params || {} }),
+  create: (data) => api.post('/achievement', data),
+  update: (data) => api.put('/achievement', data),
+  remove: (id) => api.delete(`/achievement/${id}`),
+  verify: (id, status) => api.post(`/achievement/${id}/verify`, null, { params: { status } }),
+  batchPass: (ids) => api.post('/achievement/batch-pass', { ids }),
+  batchDelete: (ids) => api.post('/achievement/batch-delete', { ids }),
+  upload: (formData) => api.post('/achievement/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 60000 }),
+  getOcrStatus: () => api.get('/achievement/ocr/status'),
+  ocrRecognize: (fileUrl) => api.post('/achievement/ocr', { fileUrl }, { timeout: 90000 })
+}
